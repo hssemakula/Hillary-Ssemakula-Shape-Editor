@@ -1,0 +1,15 @@
+#wrapper {
+  height: 100vh;
+}
+
+#canvas {
+  /*border-radius: 25px; good design but makes coordinates inaccurate */
+  background-color: white;
+}
+
+#shape_menu {}
+
+.shapeHover {
+  background-color: rgba(255, 255, 255, 0);
+  border: 1px dashed #85C1E9;
+}

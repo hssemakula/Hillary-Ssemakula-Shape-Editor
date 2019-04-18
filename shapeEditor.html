@@ -1,0 +1,167 @@
+<!-- Hillary Ssemakula
+ Graphics I: Final Project
+-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="description" content="Canvas with rubber band selection box.">
+  <meta name="keywords" content="canvas, rubber band, selection, save, screen, restore, HTML5">
+  <title> Hillary Ssemakula Shape Editor </title>
+  <!-- Styled with bootstrap -->
+  <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="./css/styles.css">
+
+  <!-- additional functionality Jquery -->
+  <script src="./js/jquery-3.3.1.min.js"></script>
+  <script src="./js/jquery-ui.min.js"></script>
+
+</head>
+
+
+<body>
+
+  <div id="wrapper" class="container-fluid bg-dark m-0 p-0">
+
+    <div class="container-fluid bg-light col-lg-12">
+      <center>
+        <h3 class="pt-2 pb-3"> Hillary Ssemakula Shape Editor</h3>
+      </center>
+    </div>
+
+
+    <!-- MAIN ROW -->
+    <div class="row m-0 pb-5 pr-0 pl-0 pt-0 bg-dark">
+
+      <!-- SHAPE MENU DIV---------------------------------------------------------------->
+      <div id="shapeMenu" class=" col-md-2 mt-5 mr-5 ml-2">
+
+
+        <!--Heading -->
+        <div class=" text-white">
+          <h5> <u> Choose Shape </u> </h5>
+        </div>
+
+
+        <!-- list of shape buttons DIV-->
+        <div class="row" id="buttonList">
+
+          <!--- LIST 1, Rectangle, Square, Circle, Ellipse -->
+          <ul class="mt-3 list-unstyled text-center">
+            <!-- Triangle -->
+            <li class="mt-1 p-0">
+              <button type="button" class="btn btn-dark shapeButton" id="triangle">
+                <svg height="50" width="50">
+                  <polygon points="25,5 45,40 5,40" stroke="white" stroke-width="2" fill="#37474F" />
+                </svg>
+              </button>
+            </li>
+
+            <!-- Square -->
+            <li class="mt-1">
+              <button type="button" class=" shapeButton btn btn-dark " id="square">
+                <svg width="50" height="50">
+                  <rect x="5" y="5" width="40" height="40" fill="#37474F" stroke="white" stroke-width="2" />
+                </svg>
+              </button>
+            </li>
+
+            <!-- Rectangle -->
+            <li class="mt-1">
+              <button type="button" class=" shapeButton btn btn-dark " id="rectangle">
+                <svg width="55" height="50">
+                  <rect x="5" y="5" width="45" height="30" rx="5" ry="5" fill="#37474F" stroke="white" stroke-width="2" />
+                </svg>
+              </button>
+            </li>
+
+            <!-- Circle -->
+            <li class="mt-1"> <button type="button" class=" shapeButton btn btn-dark" id="circle">
+                <svg width="50" height="50">
+                  <circle cx="25" cy="25" r="20" stroke="white" stroke-width="2" fill="#37474F" />
+                </svg>
+              </button> </li>
+
+            <!-- Ellipse -->
+            <li class="mt-1"> <button type="button" class=" shapeButton btn btn-dark" id="ellipse">
+                <svg height="50" width="50">
+                  <ellipse cx="25" cy="25" rx="23" ry="13" stroke="white" stroke-width="2" fill="#37474F" /></svg></button>
+            </li>
+
+            <!--- END LIST 1 -->
+
+            <!-- List 2: line, curve, polyline, polygon -->
+          </ul>
+          <ul class="mt-3 list-unstyled text-center">
+
+            <!-- LINE -->
+            <li class="mt-1">
+              <button type="button" class=" shapeButton btn btn-dark " id="line">
+                <svg height="50" width="50">
+                  <line x1="0" y1="25" x2="50" y2="25" stroke="white" stroke-width="2" />
+                </svg>
+              </button>
+            </li>
+
+            <!-- curve -->
+            <li class="mt-1"> <button type="button" class=" shapeButton btn btn-dark" id="curve">
+                <svg height="50" width="50">
+                  <path d="M0,35 C20,5 25,50 50,20" stroke="white" stroke-width="2" fill="#37474F" /></svg></button>
+            </li>
+
+            <!-- Poly-line -->
+            <li class="mt-1">
+              <button type="button" class=" btn btn-dark polybutton" id="polyline">
+                <svg height="50" width="50">
+                  <line x1="3" y1="30" x2="25" y2="15" stroke="white" stroke-width="2" />
+                  <line x1="25" y1="15" x2="37" y2="30" stroke="white" stroke-width="2" />
+                  <line x1="37" y1="30" x2="50" y2="30" stroke="white" stroke-width="2" />
+                  <circle cx="3" cy="30" r="3" fill="white" />
+                  <circle cx="25" cy="15" r="3" fill="white" />
+                  <circle cx="37" cy="30" r="3" fill="white" />
+                  <circle cx="50" cy="30" r="3" fill="white" />
+                </svg>
+              </button>
+            </li>
+
+            <!-- Polygon -->
+            <li class="mt-1">
+              <button type="button" class=" btn btn-dark polybutton" id="polygon">
+                <svg height="50" width="55">
+                  <line x1="3" y1="15" x2="33" y2="3" stroke="white" stroke-width="2" />
+                  <line x1="33" y1="3" x2="49" y2="15" stroke="white" stroke-width="2" />
+                  <line x1="49" y1="15" x2="25" y2="40" stroke="white" stroke-width="2" />
+                  <line x1="25" y1="40" x2="3" y2="15" stroke="white" stroke-width="2" />
+                  <circle cx="3" cy="15" r="3" fill="white" />
+                  <circle cx="33" cy="3" r="3" fill="white" />
+                  <circle cx="49" cy="15" r="3" fill="white" />
+                  <circle cx="25" cy="40" r="3" fill="white" />
+                </svg>
+              </button>
+            </li>
+          </ul>
+          <!-- End list 2 -->
+        </div>
+      </div>
+
+      <!---------------------------- END shape menu --------------------------------------------------------------->
+
+      <!--- CANVAS --->
+      <div class="col-md-7">
+        <center>
+          <canvas id="canvas" width="700" height="500" style="width:700px; height:500px; margin-top:50px"></canvas>
+        </center>
+      </div>
+    </div>
+
+
+    <script src="./js/shapeEditor.js"></script>
+
+  </div>
+</body>
+
+</html>
