@@ -4,6 +4,8 @@ var polyType = "";
 var startPolyDraw = false;
 var isMouseDown = false;
 var canvas1 = new CanvasObject(canvas); //This is the global canvas, we'll be working with.
+var selectedShape = -100; //index to note selected shape.
+
 
 function getMouseCoordinates(event) {
   //get mouse position
@@ -20,52 +22,54 @@ function Shape(type, coordinates) {
 
 //Draw function for shape object.
 Shape.prototype.draw = function(context) {
-  context.beginPath();
+  this.path = new Path2D(); //path object very important to check whether point lies in path.
+  context.beginPath(this.path);
   switch (String(this.type)) {
     case "line":
-      context.moveTo(this.coordinates[0], this.coordinates[1]);
-      context.lineTo(this.coordinates[2], this.coordinates[3]);
+      this.path.moveTo(this.coordinates[0], this.coordinates[1]);
+      this.path.lineTo(this.coordinates[2], this.coordinates[3]);
       break;
     case "triangle":
-      context.moveTo(this.coordinates[0], this.coordinates[1]);
-      context.lineTo(this.coordinates[2], this.coordinates[3]);
-      context.lineTo(this.coordinates[4], this.coordinates[5]);
-      context.lineTo(this.coordinates[0], this.coordinates[1]);
+      this.path.moveTo(this.coordinates[0], this.coordinates[1]);
+      this.path.lineTo(this.coordinates[2], this.coordinates[3]);
+      this.path.lineTo(this.coordinates[4], this.coordinates[5]);
+      this.path.lineTo(this.coordinates[0], this.coordinates[1]);
       break;
     case "square":
-      context.rect(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[2]);
+      this.path.rect(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[2]);
       break;
     case "rectangle":
-      context.rect(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3]);
+      this.path.rect(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3]);
       break;
     case "circle":
-      context.arc(this.coordinates[0], this.coordinates[1], this.coordinates[2], 0, 2 * Math.PI);
+      this.path.arc(this.coordinates[0], this.coordinates[1], this.coordinates[2], 0, 2 * Math.PI);
       break;
     case "ellipse":
-      context.ellipse(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3], 0, 0, 2 * Math.PI);
+      this.path.ellipse(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3], 0, 0, 2 * Math.PI);
       break;
     case "curve":
-      context.moveTo(this.coordinates[0], this.coordinates[1]);
-      context.quadraticCurveTo(this.coordinates[2], this.coordinates[3],
+      this.path.moveTo(this.coordinates[0], this.coordinates[1]);
+      this.path.quadraticCurveTo(this.coordinates[2], this.coordinates[3],
         this.coordinates[4], this.coordinates[5]);
-      context.quadraticCurveTo(this.coordinates[6], this.coordinates[7],
+      this.path.quadraticCurveTo(this.coordinates[6], this.coordinates[7],
         this.coordinates[8], this.coordinates[9]);
       break;
     case "polyline":
-      context.moveTo(this.coordinates[0], this.coordinates[1]);
+      this.path.moveTo(this.coordinates[0], this.coordinates[1]);
       for (var i = 2; i < this.coordinates.length; i += 2) {
-        context.lineTo(this.coordinates[i], this.coordinates[i + 1]);
+        this.path.lineTo(this.coordinates[i], this.coordinates[i + 1]);
       }
       break;
     case "polygon":
-      context.moveTo(this.coordinates[0], this.coordinates[1]);
+      this.path.moveTo(this.coordinates[0], this.coordinates[1]);
       for (var i = 2; i < this.coordinates.length; i += 2) {
-        context.lineTo(this.coordinates[i], this.coordinates[i + 1]);
+        this.path.lineTo(this.coordinates[i], this.coordinates[i + 1]);
       }
       break;
     default:
   }
-  context.stroke();
+  context.closePath(this.path);
+  context.stroke(this.path);
 }
 
 function CanvasObject(canvas) {
@@ -79,8 +83,9 @@ function CanvasObject(canvas) {
 
 CanvasObject.prototype.draw =
   function() {
-    this.context.clearRect(0, 0, canvas.width, canvas.height);
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     for (var i = 0; i < shapes.length; i++) {
+      this.context.strokeStyle = "#1B4F72";
       shapes[i].draw(this.context);
     }
   }
@@ -97,8 +102,18 @@ $(function() {
     startPolyDraw = true;
   });
 
-  $("#canvas").click(function() {
-    if (polyType != "") {}
+  $("#canvas").click(function(event) {
+    var coordinates = getMouseCoordinates(event);
+    for (var i = 0; i < shapes.length; i++) {
+      if (canvas1.context.isPointInPath(shapes[i].path, coordinates[0], coordinates[1])) {
+        selectedShape = i;
+        break;
+      }
+      else{
+        selectedShape = -100
+      }
+    }
+
   });
 
 
@@ -121,6 +136,11 @@ $(function() {
       changeLastVertex(x, y);
       canvas1.draw();
     }
+
+    if (selectedShape != -100 && isMouseDown) {
+      shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
+      canvas1.draw();
+    }
   });
 
 
@@ -128,8 +148,8 @@ $(function() {
     isMouseDown = false;
   });
 
-  $("#canvas").dblclick(function() {
-    finalizePoly();
+  $("#canvas").dblclick(function(event) {
+    finalizePoly(getMouseCoordinates(event));
   });
 
   //--------------------- END MOUSE EVENTS ----------------------------
@@ -163,43 +183,48 @@ $(function() {
       var rect = event.target.getBoundingClientRect();
       var x = event.clientX - rect.left; //x position within the canvas
       var y = event.clientY - rect.top; //y position within the canvas
+      shapes.push(makeShape(String(ui.draggable.attr("id")), x, y));
 
-      switch (String(ui.draggable.attr("id"))) {
-        case "line":
-          shapes.push(new Shape("line", [x - 50, y, x + 50, y]));
-          break;
-        case "triangle":
-          shapes.push(new Shape("triangle", [x + 50, y + 50, x, y - 50, x - 50, y + 50]));
-          break;
-        case "square":
-          shapes.push(new Shape("square", [x - 50, y - 50, 100]));
-          break;
-        case "rectangle":
-          shapes.push(new Shape("rectangle", [x - 50, y - 25, 100, 50]));
-          break;
-        case "circle":
-          shapes.push(new Shape("circle", [x, y, 50]));
-          break;
-        case "ellipse":
-          shapes.push(new Shape("ellipse", [x, y, 100, 50]));
-          break;
-        case "curve":
-          shapes.push(new Shape("curve", [
-            x - 50, y + 25, // start point on first quardratic curve.
-            x - 25, y - 25, // control point on first quardratic curve
-            x, y, //end point and start point: first/second curve.
-            x + 25, y + 25, // control point on second quardratic curve
-            x + 50, y - 25 // end point on second quardratic curve
-          ]));
-          break;
-        default:
-      }
       canvas1.draw();
     }
   });
 
 
 });
+
+//given a string representation of a shape and x.y coordinates, this function generates a default shape.
+function makeShape(shapeType, x, y) {
+  switch (shapeType) {
+    case "line":
+      return new Shape("line", [x - 50, y, x + 50, y]);
+      break;
+    case "triangle":
+      return new Shape("triangle", [x + 50, y + 50, x, y - 50, x - 50, y + 50]);
+      break;
+    case "square":
+      return new Shape("square", [x - 50, y - 50, 100]);
+      break;
+    case "rectangle":
+      return new Shape("rectangle", [x - 50, y - 25, 100, 50]);
+      break;
+    case "circle":
+      return new Shape("circle", [x, y, 50]);
+      break;
+    case "ellipse":
+      return new Shape("ellipse", [x, y, 100, 50]);
+      break;
+    case "curve":
+      return new Shape("curve", [
+        x - 50, y + 25, // start point on first quardratic curve.
+        x - 25, y - 25, // control point on first quardratic curve
+        x, y, //end point and start point: first/second curve.
+        x + 25, y + 25, // control point on second quardratic curve
+        x + 50, y - 25 // end point on second quardratic curve
+      ]);
+      break;
+    default:
+  }
+}
 
 //changes last coordinate of poly to given coordinates
 function changeLastVertex(x, y) {
@@ -246,7 +271,7 @@ function initPoly(coordinates) {
 
 
 //called by double click this method finalizes the polygon or polyline drawing.
-function finalizePoly() {
+function finalizePoly(coordinates) {
   //check if polygon drawn is more than 3 sides.(2 * 3 vertices)
   if (polyType == "polygon" && shapes[shapes.length - 1].coordinates.length <= 6) {
     alert("A ploygon cannot have less than 3 sides");
