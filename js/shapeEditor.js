@@ -3,6 +3,7 @@ var canvas = document.getElementById("canvas");
 var polyType = "";
 var startPolyDraw = false;
 var isMouseDown = false;
+var canvas1 = new CanvasObject(canvas); //This is the global canvas, we'll be working with.
 
 function getMouseCoordinates(event) {
   //get mouse position
@@ -17,6 +18,7 @@ function Shape(type, coordinates) {
   this.coordinates = coordinates
 }
 
+//Draw function for shape object.
 Shape.prototype.draw = function(context) {
   context.beginPath();
   switch (String(this.type)) {
@@ -55,6 +57,12 @@ Shape.prototype.draw = function(context) {
         context.lineTo(this.coordinates[i], this.coordinates[i + 1]);
       }
       break;
+    case "polygon":
+      context.moveTo(this.coordinates[0], this.coordinates[1]);
+      for (var i = 2; i < this.coordinates.length; i += 2) {
+        context.lineTo(this.coordinates[i], this.coordinates[i + 1]);
+      }
+      break;
     default:
   }
   context.stroke();
@@ -63,28 +71,30 @@ Shape.prototype.draw = function(context) {
 function CanvasObject(canvas) {
   this.canvas = canvas;
   this.context = canvas.getContext('2d');
+  this.context.strokeStyle = "#1B4F72";
+
 }
 
-CanvasObject.prototype.draw = function() {
-  this.context.clearRect(0, 0, canvas.width, canvas.height);
-  for (var i = 0; i < shapes.length; i++) {
-    shapes[i].draw(this.context);
+
+
+CanvasObject.prototype.draw =
+  function() {
+    this.context.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = 0; i < shapes.length; i++) {
+      shapes[i].draw(this.context);
+    }
   }
-}
 
 $(function() {
-  var canvas1 = new CanvasObject(canvas); //This is the global canvas, we'll be working with.
 
 
   attachDraggableAbility();
 
 
-  //if polygon or polyline button
+  //if polygon or polyline button has been clicked.
   $(".polybutton").click(function() {
     polyType = $(this).attr('id');
     startPolyDraw = true;
-    //console.log(polyType);
-    //console.log(startPolyDraw);
   });
 
   $("#canvas").click(function() {
@@ -106,23 +116,20 @@ $(function() {
     var y = coordinates[1];
 
 
-
     //if user is dragging to define poly change last two coordintes and draw
     if (polyType != "" && isMouseDown) {
-      var shapeIndex = shapes.length - 1; //last shape added
-      var xToChange = shapes[shapeIndex].coordinates.length - 2; //last coordintes added by mouse down i.e 0,0, these are to be cahged to new x and y
-      var yToChange = shapes[shapeIndex].coordinates.length - 1;
-
-      shapes[shapeIndex].coordinates[xToChange] = x; //coordinates changed
-      shapes[shapeIndex].coordinates[yToChange] = y;
+      changeLastVertex(x, y);
       canvas1.draw();
     }
-
   });
 
 
   $("#canvas").mouseup(function() {
     isMouseDown = false;
+  });
+
+  $("#canvas").dblclick(function() {
+    finalizePoly();
   });
 
   //--------------------- END MOUSE EVENTS ----------------------------
@@ -194,22 +201,78 @@ $(function() {
 
 });
 
+//changes last coordinate of poly to given coordinates
+function changeLastVertex(x, y) {
+  var shapeIndex = shapes.length - 1; //last shape added
+  var xIndexToChange = shapes[shapeIndex].coordinates.length - 2; //last coordintes added by mouse down i.e 0,0, these are to be cahged to new x and y
+  var yIndexToChange = shapes[shapeIndex].coordinates.length - 1;
+
+  shapes[shapeIndex].coordinates[xIndexToChange] = x; //coordinates changed
+  shapes[shapeIndex].coordinates[yIndexToChange] = y;
+}
+
+
+
+
+
+
+
+
 //passed mouse coordinates, checks if a poly button is selected and initializes a new poly shape to be drawn by moving mouse.
 function initPoly(coordinates) {
-  //if we handn't innitialized poly yet. initialize it.
-  if (startPolyDraw) {
-    switch (polyType) {
-      case "polyline":
-        //add 0,0 at end because mousemove changes those values for rubberbanding.
-        shapes.push(new Shape("polyline", [coordinates[0], coordinates[1], 0, 0]));
-        break;
-      case "polygon":
-        shapes.push(new Shape("polygon", [coordinates[0], coordinates[1], 0, 0]));
-        break;
+  //if a plogon or polyline button has been clicked
+  if (polyType != "") {
+    //if first click add new polygon or polyline
+    if (startPolyDraw) {
+      //add 0,0 at end because mousemove changes those values for rubberbanding.
+      //-1000 is a place holder for next click coordinates.
+      shapes.push(new Shape(polyType, [coordinates[0], coordinates[1], -1000, -1000]));
+      startPolyDraw = false; //turn poly initialization off until next time poly burron is clicked
+    } else {
+      //if vertices have been added to shape by mouse move, last 2 points won't be -1000
+      if (shapes[shapes.length - 1].coordinates[shapes[shapes.length - 1].coordinates.length - 2] != -1000) {
+        shapes[shapes.length - 1].coordinates.push(-1000);
+        shapes[shapes.length - 1].coordinates.push(-1000);
+      }
+      changeLastVertex(coordinates[0], coordinates[1]);
+      canvas1.draw();
+
     }
-    startPolyDraw = false; //turn poly initialization off until next time button is poly clicked
+  }
+}
+
+
+
+
+
+//called by double click this method finalizes the polygon or polyline drawing.
+function finalizePoly() {
+  //check if polygon drawn is more than 3 sides.(2 * 3 vertices)
+  if (polyType == "polygon" && shapes[shapes.length - 1].coordinates.length <= 6) {
+    alert("A ploygon cannot have less than 3 sides");
+    return;
+  }
+  //check if last point dragged to, in polygon mode is close to the first point, if so join
+  else if (polyType == "polygon") {
+    var shapeIndex = shapes.length - 1;
+    var lastXIndex = shapes[shapeIndex].coordinates.length - 2; //most recent coordinates of polygon placed.
+    var lastYIndex = shapes[shapeIndex].coordinates.length - 1;
+
+    //if last point clicked is close to starting point, join to starting point else add
+    if (Math.abs(shapes[shapeIndex].coordinates[0]) - Math.abs(shapes[shapeIndex].coordinates[lastXIndex]) <= 5 ||
+      Math.abs(shapes[shapeIndex].coordinates[1]) - Math.abs(shapes[shapeIndex].coordinates[lastYIndex]) <= 5) {
+      shapes[shapeIndex].coordinates[lastXIndex] = shapes[shapeIndex].coordinates[0];
+      shapes[shapeIndex].coordinates[lastYIndex] = shapes[shapeIndex].coordinates[1];
+    } else {
+      //else add another vertex and join to start point.
+      shapes[shapeIndex].coordinates.push(coordinates[0]);
+      shapes[shapeIndex].coordinates.push(coordinates[1]);
+    }
   }
 
+  polyType = "";
+  startPolyDraw = false;
+  canvas1.draw();
 }
 
 
