@@ -85,7 +85,7 @@ CanvasObject.prototype.draw =
   function() {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     for (var i = 0; i < shapes.length; i++) {
-      this.context.strokeStyle = "#1B4F72";
+      console.log(shapes);
       shapes[i].draw(this.context);
     }
   }
@@ -103,17 +103,12 @@ $(function() {
   });
 
   $("#canvas").click(function(event) {
-    var coordinates = getMouseCoordinates(event);
-    for (var i = 0; i < shapes.length; i++) {
-      if (canvas1.context.isPointInPath(shapes[i].path, coordinates[0], coordinates[1])) {
-        selectedShape = i;
-        break;
-      }
-      else{
-        selectedShape = -100
-      }
+    //if this is double click, don't try to select, just return.
+    if (event.originalEvent.detail > 1) {
+      return;
     }
-
+    var coordinates = getMouseCoordinates(event);
+    makeSelection(coordinates);
   });
 
 
@@ -137,10 +132,19 @@ $(function() {
       canvas1.draw();
     }
 
+    //-------------------------------TRANSLATION CODE.
+    //if shape is selected,
     if (selectedShape != -100 && isMouseDown) {
-      shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
+      //if new point is within shape then move: prevents selected shape from jumping from one point to another.
+      if (canvas1.context.isPointInPath(shapes[selectedShape].path, x, y)) {
+        if (shapes[selectedShape].type == "polyline" || shapes[selectedShape].type == "polygon") {
+          translatePoly(selectedShape, x, y);
+        } else shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
+      }
       canvas1.draw();
     }
+
+    //------------------------------------------------------
   });
 
 
@@ -226,6 +230,15 @@ function makeShape(shapeType, x, y) {
   }
 }
 
+//Translate poly: because polylines and polygons are constructed on the fly, they need a special translate method.
+function translatePoly(shapeIndex, x, y) {
+  var shape = shapes[shapeIndex];
+  for (var i = 0; i < shape.coordinates.length; i += 2) {
+    shape.coordinates[i] += x
+    shape.coordinates[i + 1] += y;
+  }
+}
+
 //changes last coordinate of poly to given coordinates
 function changeLastVertex(x, y) {
   var shapeIndex = shapes.length - 1; //last shape added
@@ -237,10 +250,25 @@ function changeLastVertex(x, y) {
 }
 
 
-
-
-
-
+//make selection and updated flag to reflect selected shape.
+function makeSelection(coordinates) {
+  //if there are shapes that have been drawn and we're not in poly mode.
+  if (shapes.length > 0 && polyType == "") {
+    //check if pointer lies in any path of any shape stored so far.
+    for (var i = 0; i < shapes.length; i++) {
+      if (canvas1.context.isPointInPath(shapes[i].path, coordinates[0], coordinates[1])) {
+        console.log("yes");
+        selectedShape = i;
+        console.log(selectedShape);
+        break;
+      } else {
+        console.log("no");
+        console.log(selectedShape);
+        selectedShape = -100
+      }
+    }
+  }
+}
 
 
 //passed mouse coordinates, checks if a poly button is selected and initializes a new poly shape to be drawn by moving mouse.
@@ -290,14 +318,13 @@ function finalizePoly(coordinates) {
       shapes[shapeIndex].coordinates[lastYIndex] = shapes[shapeIndex].coordinates[1];
     } else {
       //else add another vertex and join to start point.
-      shapes[shapeIndex].coordinates.push(coordinates[0]);
-      shapes[shapeIndex].coordinates.push(coordinates[1]);
+      shapes[shapeIndex].coordinates.push(shapes[shapeIndex].coordinates[0]);
+      shapes[shapeIndex].coordinates.push(shapes[shapeIndex].coordinates[1]);
     }
   }
-
-  polyType = "";
-  startPolyDraw = false;
   canvas1.draw();
+  startPolyDraw = false;
+  polyType = "";
 }
 
 
