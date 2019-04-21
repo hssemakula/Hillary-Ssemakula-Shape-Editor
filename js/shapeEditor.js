@@ -160,7 +160,6 @@ $(function() {
     //-------------------------------TRANSLATION CODE.
     //if shape is selected,
     if (selectedShape != -100 && isMouseDown) {
-      console.log(selectedShape);
       //if new point is within shape then move: prevents selected shape from jumping from one point to another.
       switch (shapes[selectedShape].type) {
         case "polygon":
@@ -268,7 +267,6 @@ function makeShape(shapeType, x, y) {
 
 //Translate poly: because polylines and polygons are constructed on the fly, they need a special translate method.
 function translatePoly(shapeIndex, x, y) {
-  console.log(shapes);
   var shape = shapes[shapeIndex];
   for (var i = 0; i < shape.coordinates.length; i += 2) {
     shape.coordinates[i] += x
@@ -346,7 +344,6 @@ function initPoly(coordinates) {
 
 //called by double click this method finalizes the polygon or polyline drawing.
 function finalizePoly(coordinates) {
-  console.log(shapes[shapes.length - 1].coordinates.length, shapes);
   if (polyType == "polyline" && shapes[shapes.length - 1].coordinates.length < 4) {
     alert("A ployline cannot be a dot");
     return;
