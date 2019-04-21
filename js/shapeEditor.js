@@ -161,15 +161,21 @@ $(function() {
     //if shape is selected,
     if (selectedShape != -100 && isMouseDown) {
       //if new point is within shape then move: prevents selected shape from jumping from one point to another.
-      if (canvas1.context.isPointInPath(shapes[selectedShape].path, x, y) || canvas1.context.isPointInStroke(shapes[selectedShape].path, x, y)) {
-        if (shapes[selectedShape].type == "polyline" || shapes[selectedShape].type == "polygon") {
-          //movementX and Y used because polygons and lines don't have a center(x,y) that can easily be incremented or decremented
-          //so change in x and y cursor is used to increment/decrement all sides.
+      switch (shapes[selectedShape].type) {
+        case "ploygon":
+        case "polyline":
           translatePoly(selectedShape, xChangeCanvas, yChangeCanvas);
-        } else shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
-        shapes[selectedShape].selected = true //draw border and shadow as shape is moved to show selection.
+          break;
+        case "line":
+        case "curve":
+          shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
+          break;
+        default:
+          if (canvas1.context.isPointInPath(shapes[selectedShape].path, x, y) || canvas1.context.isPointInStroke(shapes[selectedShape].path, x, y)) { //keep pointer within shape.
+            shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
+          }
       }
-
+      shapes[selectedShape].selected = true;
       canvas1.draw();
     }
 
@@ -229,7 +235,7 @@ $(function() {
 function makeShape(shapeType, x, y) {
   switch (shapeType) {
     case "line":
-      return new Shape("line", [x - 50, y, x, y]);
+      return new Shape("line", [x - 50, y, x + 50, y - 150]);
       break;
     case "triangle":
       return new Shape("triangle", [x + 50, y + 50, x, y - 50, x - 50, y + 50]);
