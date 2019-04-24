@@ -7,6 +7,7 @@ var canvas1 = new CanvasObject(canvas); //This is the global canvas, we'll be wo
 var selectedShape = -100; //index to note selected shape.
 var xChangeCanvas = 0; //variables to keep track of change in mouse position within canavs: used to ploy transformations.
 var yChangeCanvas = 0;
+var mode = ""; //tracks whether we are rotating or scaling.
 
 
 function getMouseCoordinates(event) {
@@ -23,47 +24,10 @@ function Shape(type, coordinates) {
   this.selected = false;
   this.thickness = 3;
   this.color = "#2E86C1";
-  this.rotationIcon;
-  this.scaleIcon;
+  this.rotationIconPath;
+  this.scaleIconPath;
 }
 
-/*
-
-Scale ICON
-var x = 100;
-var y = 75;
-var c = document.getElementById("myCanvas");
-var ctx = c.getContext("2d");
-ctx.beginPath();
-ctx.lineWidth = 2;
-ctx.arc(x,y, 5, 0, 2 * Math.PI);
-    ctx.shadowColor = 'black';
-    ctx.shadowBlur = 4;
-    ctx.strokeStyle = "white";
-    ctx.fillStyle = "white";
-    ctx.fill();
-ctx.stroke();
-*/
-
-/*
-ROTATION ICON
-var x = 100;
-var y = 75;
-var c = document.getElementById("myCanvas");
-var ctx = c.getContext("2d");
-ctx.beginPath();
-ctx.lineWidth = 2;
-ctx.arc(x,y, 10, 0, 1.5 * Math.PI);
-ctx.moveTo(x+1, y);
-ctx.lineTo(x+2, y-5);
-ctx.moveTo(x+1, y-10);
-ctx.lineTo(x+15, y);
-    ctx.shadowColor = 'black';
-    ctx.shadowBlur = 4;
-    ctx.strokeStyle = "white";
-ctx.stroke();
-
-*/
 
 //Draw function for shape object.
 Shape.prototype.draw = function(context) {
@@ -153,8 +117,8 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
         y = this.coordinates[3];
         x = this.coordinates[2];
         //scale icon.
-        scaleIconX = this.coordinates[1];
-        scaleIconY = this.coordinates[0];
+        scaleIconX = this.coordinates[0];
+        scaleIconY = this.coordinates[1];
         break;
       case "circle":
       case "ellipse":
@@ -181,36 +145,37 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
         y = this.coordinates[1];
         //scale icon.
         scaleIconX = this.coordinates[0] + this.coordinates[2];
-        scaleIconY = this.coordinates[1] + this.coordinates[3] / 2;
+        scaleIconY = this.coordinates[1] + (this.type == "square" ? this.coordinates[2] / 2 : this.coordinates[3] / 2);
         break;
       default:
 
     }
-    this.rotationIcon = new Path2D();
-    this.scaleIcon = new Path2D();
+    this.rotationIconPath = new Path2D();
+    this.scaleIconPath = new Path2D();
 
     //draw rotation icon
-    context.beginPath(this.rotationIcon);
+
     context.lineWidth = 2;
     context.strokeStyle = "black"
-    var i = y - 10; //displace the icon alittle bit on the y axis.
-    context.arc(x, i, 5, 0, 1.5 * Math.PI);
-    context.moveTo(x + 7, i);
-    context.lineTo(x + 2, i + 1);
-    context.moveTo(x + 6, i);
-    context.lineTo(x + 7, i + 4);
     context.shadowColor = 'black';
     context.shadowBlur = 4;
     context.strokeStyle = "white";
+    var i = y - 10; //displace the icon alittle bit on the y axis.
+    context.beginPath(this.rotationIconPath);
+    this.rotationIconPath.arc(x, i, 5, 0, 1.5 * Math.PI);
+    this.rotationIconPath.moveTo(x + 7, i);
+    this.rotationIconPath.lineTo(x + 2, i + 1);
+    this.rotationIconPath.moveTo(x + 6, i);
+    this.rotationIconPath.lineTo(x + 7, i + 4);
     context.closePath(this.rotationIcon);
-    context.stroke();
+    context.stroke(this.rotationIconPath);
 
     //-----------------draw scale icon.
-    context.beginPath(this.scaleIcon);
-    context.arc(scaleIconX, scaleIconY, 5, 0, 2 * Math.PI);
-    context.strokeStyle = "gray";
+    context.strokeStyle = "grey";
     context.lineWidth = .7
     context.fillStyle = "white";
+    context.beginPath(this.scaleIconPath);
+    this.scaleIconPath.arc(scaleIconX, scaleIconY, 5, 0, 2 * Math.PI);
     context.fill();
     context.closePath(this.scaleIcon);
     context.stroke();
@@ -274,6 +239,13 @@ $(function() {
   $("#canvas").mousedown(function(event) {
     isMouseDown = true;
     var coordinates = getMouseCoordinates(event);
+    if (selectedShape != -100) {
+      if (canvas1.context.isPointInPath(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1]) ||
+        canvas1.context.isPointInStroke(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1])) {
+        mode = "rotate";
+        alert("rotate");
+      }
+    }
     makeSelection(coordinates); //if mouse down near another object, it can be selected.
     initPoly(coordinates); //initilize a polygon if poly button pressed
   });
