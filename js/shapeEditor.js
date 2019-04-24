@@ -572,6 +572,13 @@ function rotateShape(shapeIndex, context) {
       shape.angle += angle;
       break;
     default: // Move rotation point to center of the shape.
+
+      //if shape is polyline or polygon, we can't tell what the center is since it's user defined: we used the exact point where the rotaion icon is
+      if (shape.type == "polygon" || shape.type == "polyline") {
+        rotationPointX = (shape.coordinates[0] + shape.coordinates[2]) / 2;
+        rotationPointY = (shape.coordinates[1] + shape.coordinates[3]) / 2;
+      }
+
       context.translate(rotationPointX, rotationPointY);
       //translate each point of shape to new rotation point.
       //(i.e we want to rotate about a given point, not the origin so we translate the coordinate system to that point)
