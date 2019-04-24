@@ -18,22 +18,64 @@ function getMouseCoordinates(event) {
   return [x, y];
 }
 
-function Shape(type, coordinates) {
-  this.type = type;
-  this.coordinates = coordinates;
+function Shape(type, x, y) {
+  this.type = type; //string type of shape
+  this.coordinates = []; //array of coordinates.
   this.selected = false;
-  this.thickness = 3;
-  this.color = "#2E86C1";
-  this.rotationIconPath;
-  this.scaleIconPath;
+  this.thickness = 3; //thickness of line
+  this.lineColor = "#2E86C1";
+  this.fillColor = "";
+  this.rotationIconPath; //rotation icon
+  this.scaleIconPath; //scale icon
+  this.centerX = x; //coorinates for center of shape, poly's don't use this
+  this.centerY = y;
+  this.angle = 0; //angle of rotation if any, poly's dont use this.
 }
 
+//build shape using given center point
+Shape.prototype.build = function() {
+  //using shape type define coordinates.
+  switch (this.type) {
+    case "line":
+      this.coordinates = [this.centerX - 50, this.centerY, this.centerX + 50, this.centerY];
+      break;
+    case "triangle":
+      this.coordinates = [this.centerX + 50, this.centerY + 50, this.centerX, this.centerY - 50,
+        this.centerX - 50, this.centerY + 50
+      ];
+      break;
+    case "square":
+    case "rectangle":
+      var topLeftX = this.centerX - 50;
+      var topLeftY = (this.type == "square") ? this.centerY - 50 : this.centerY - 25;
+      this.coordinates = [topLeftX, topLeftY, topLeftX + 100, topLeftY, topLeftX + 100,
+        (this.type == "square") ? topLeftY + 100 : topLeftY + 50,
+        topLeftX, (this.type == "square") ? topLeftY + 100 : topLeftY + 50, topLeftX, topLeftY
+      ];
+      break;
+    case "ellipse":
+    case "circle":
+      //circle and ellipse drawn using same code.
+      this.coordinates = [this.centerX, this.centerY, (this.type == "ellipse") ? 100 : 50, 50];
+      break;
+    case "curve":
+      this.coordinates = [
+        this.centerX - 50, this.centerY + 25, // start point on first quardratic curve.
+        this.centerX - 25, this.centerY - 25, // control point on first quardratic curve
+        this.centerX, this.centerY, //end point and start point: first/second curve.
+        this.centerX + 25, this.centerY + 25, // control point on second quardratic curve
+        this.centerX + 50, this.centerY - 25 // end point on second quardratic curve
+      ];
+      break;
+    default:
+  }
+}
 
 //Draw function for shape object.
 Shape.prototype.draw = function(context) {
   this.path = new Path2D(); //path object very important to check whether point lies in path.
   context.lineWidth = this.thickness;
-  context.strokeStyle = this.color;
+  context.strokeStyle = this.lineColor;
   if (this.selected) {
     context.shadowColor = 'green';
     context.shadowBlur = 7;
@@ -41,6 +83,13 @@ Shape.prototype.draw = function(context) {
     context.shadowBlur = 0;
   }
   context.beginPath(this.path);
+
+  //if shape has not been built yet and is not polygon or polyline.
+  if ((this.coordinates.length <= 0) && (this.type != "polygon") && (this.type != "polyline")) {
+
+    this.build();
+  }
+
   switch (String(this.type)) {
     case "line":
       this.path.moveTo(this.coordinates[0], this.coordinates[1]);
@@ -53,16 +102,15 @@ Shape.prototype.draw = function(context) {
       this.path.lineTo(this.coordinates[0], this.coordinates[1]);
       break;
     case "square":
-      this.path.rect(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[2]);
-      break;
     case "rectangle":
-      this.path.rect(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3]);
+      this.path.moveTo(this.coordinates[0], this.coordinates[1]);
+      for (var i = 0; i <= this.coordinates.length; i += 2) {
+        this.path.lineTo(this.coordinates[i], this.coordinates[i + 1]);
+      }
       break;
     case "circle":
-      this.path.arc(this.coordinates[0], this.coordinates[1], this.coordinates[2], 0, 2 * Math.PI);
-      break;
     case "ellipse":
-      this.path.ellipse(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3], 0, 0, 2 * Math.PI);
+      this.path.ellipse(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3], this.angle, 0, 2 * Math.PI);
       break;
     case "curve":
       this.path.moveTo(this.coordinates[0], this.coordinates[1]);
@@ -88,6 +136,7 @@ Shape.prototype.draw = function(context) {
   context.closePath(this.path);
   context.stroke(this.path);
   this.drawRotaionAndMoveIcons(context);
+
 }
 
 
@@ -125,7 +174,7 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
         //put icon at top of circle or ellipse
         x = this.coordinates[0];
         //if ellipse it will have a fourth coordinate(x radius), use that to place icon.
-        y = String(this.coordinates[3]) == 'undefined' ? this.coordinates[1] - this.coordinates[2] : this.coordinates[1] - this.coordinates[3];
+        y = this.coordinates[1] - this.coordinates[3];
         //scale icon.
         scaleIconX = this.coordinates[0] + this.coordinates[2]; //dont need to check if ellipse because x radius has same index as regular radius
         scaleIconY = this.coordinates[1];
@@ -140,12 +189,12 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
         break;
       case "rectangle":
       case "square":
-        //place icon at half the width.
-        x = this.coordinates[0] + this.coordinates[2] / 2;
-        y = this.coordinates[1];
+        //place icon at half of the first line.
+        x = (this.coordinates[0] + this.coordinates[2]) / 2;
+        y = (this.coordinates[1] + this.coordinates[3]) / 2;
         //scale icon.
-        scaleIconX = this.coordinates[0] + this.coordinates[2];
-        scaleIconY = this.coordinates[1] + (this.type == "square" ? this.coordinates[2] / 2 : this.coordinates[3] / 2);
+        scaleIconX = (this.coordinates[2] + this.coordinates[4]) / 2;
+        scaleIconY = (this.coordinates[3] + this.coordinates[5]) / 2;
         break;
       default:
 
@@ -160,7 +209,7 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
     context.shadowColor = 'black';
     context.shadowBlur = 4;
     context.strokeStyle = "white";
-    var i = y - 10; //displace the icon alittle bit on the y axis.
+    var i = y; //displace the icon alittle bit on the y axis.
     context.beginPath(this.rotationIconPath);
     this.rotationIconPath.arc(x, i, 5, 0, 1.5 * Math.PI);
     this.rotationIconPath.moveTo(x + 7, i);
@@ -171,14 +220,13 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
     context.stroke(this.rotationIconPath);
 
     //-----------------draw scale icon.
-    context.strokeStyle = "grey";
-    context.lineWidth = .7
+    context.strokeStyle = "white";
+    context.lineWidth = 5; //helps icon appear on top.
     context.fillStyle = "white";
     context.beginPath(this.scaleIconPath);
-    this.scaleIconPath.arc(scaleIconX, scaleIconY, 5, 0, 2 * Math.PI);
-    context.fill();
-    context.closePath(this.scaleIcon);
-    context.stroke();
+    this.scaleIconPath.arc(scaleIconX, scaleIconY, 2, 0, 2 * Math.PI);
+    context.closePath(this.scaleIconPath);
+    context.stroke(this.scaleIconPath);
   }
 }
 
@@ -228,9 +276,9 @@ $(function() {
       return;
     }
     var coordinates = getMouseCoordinates(event);
-    makeSelection(coordinates);
+    if (mode != "") makeSelection(coordinates); //some how prevents a shape from getting deselected when you click during a rotion, I don't know how, but it works.
     //this is function is also used to draw polys, so draw shouldn't be called here if we're making poly
-    if (polyType == "") canvas1.draw();
+    if (polyType == "" && mode == "") canvas1.draw();
   });
 
 
@@ -243,7 +291,10 @@ $(function() {
       if (canvas1.context.isPointInPath(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1]) ||
         canvas1.context.isPointInStroke(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1])) {
         mode = "rotate";
-        alert("rotate");
+      } else if (canvas1.context.isPointInPath(shapes[selectedShape].scaleIconPath, coordinates[0], coordinates[1]) ||
+        canvas1.context.isPointInStroke(shapes[selectedShape].scaleIconPath, coordinates[0], coordinates[1])) {
+        mode = "scale";
+        alert("scale");
       }
     }
     makeSelection(coordinates); //if mouse down near another object, it can be selected.
@@ -255,30 +306,46 @@ $(function() {
     var x = coordinates[0];
     var y = coordinates[1];
 
+    //user is trying to rotate or scale something.
+    if (polyType == "" && isMouseDown && mode != "") {
+
+      switch (mode) {
+        case "rotate":
+          rotateShape(selectedShape, canvas1.context);
+          break;
+        default:
+
+      }
+    }
 
 
     //if user is dragging to define poly change last two coordintes and draw
-    if (polyType != "" && isMouseDown) {
+    else if (polyType != "" && isMouseDown) {
       changeLastVertex(x, y);
       canvas1.draw();
     }
 
     //-------------------------------TRANSLATION CODE.
     //if shape is selected,
-    if (selectedShape != -100 && isMouseDown) {
+    else if (selectedShape != -100 && isMouseDown) {
+      var dx = x - shapes[selectedShape].centerX; //change in previous center of shape to new one.
+      var dy = y - shapes[selectedShape].centerY;
+
       //if new point is within shape then move: prevents selected shape from jumping from one point to another.
       switch (shapes[selectedShape].type) {
+        //polys use their own change in x and y values.
         case "polygon":
         case "polyline":
-          translatePoly(selectedShape, xChangeCanvas, yChangeCanvas);
+          translateShape(selectedShape, xChangeCanvas, yChangeCanvas);
           break;
+          //for curve or line we dont try to keep pointer in path.
         case "line":
         case "curve":
-          shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
+          translateShape(selectedShape, x, y);
           break;
         default:
           if (canvas1.context.isPointInPath(shapes[selectedShape].path, x, y) || canvas1.context.isPointInStroke(shapes[selectedShape].path, x, y)) { //keep pointer within shape.
-            shapes[selectedShape] = makeShape(shapes[selectedShape].type, x, y);
+            translateShape(selectedShape, x, y);
           }
       }
       shapes[selectedShape].selected = true;
@@ -291,6 +358,7 @@ $(function() {
 
   $("#canvas").mouseup(function() {
     isMouseDown = false;
+    mode = "";
   });
 
   $("#canvas").dblclick(function(event) {
@@ -298,6 +366,8 @@ $(function() {
   });
 
   $("#canvas").mouseout(function(event) {
+
+
     //causes infine line to be drawn
     //if mouse is moved outside canvas while poly is being defined, finalize poly with last known click.
     /*  if (polyType != "" && shapes.length > 0) {
@@ -337,7 +407,7 @@ $(function() {
       var rect = event.target.getBoundingClientRect();
       var x = event.clientX - rect.left; //x position within the canvas
       var y = event.clientY - rect.top; //y position within the canvas
-      shapes.push(makeShape(String(ui.draggable.attr("id")), x, y));
+      shapes.push(new Shape(String(ui.draggable.attr("id")), x, y));
       canvas1.draw();
     }
   });
@@ -345,48 +415,34 @@ $(function() {
 
 });
 
-//given a string representation of a shape and x.y coordinates, this function generates a default shape.
-function makeShape(shapeType, x, y) {
-  switch (shapeType) {
-    case "line":
-      return new Shape("line", [x - 50, y, x + 50, y]);
-      break;
-    case "triangle":
-      return new Shape("triangle", [x + 50, y + 50, x, y - 50, x - 50, y + 50]);
-      break;
-    case "square":
-      return new Shape("square", [x - 50, y - 50, 100]);
-      break;
-    case "rectangle":
-      return new Shape("rectangle", [x - 50, y - 25, 100, 50]);
-      break;
+//TranslateShape: add change in x and y to every point.
+function translateShape(shapeIndex, dx, dy) {
+  var x = dx; //save x and y before calculating change.
+  var y = dy;
+  if (shapes[selectedShape].type != "polyline" && shapes[selectedShape].type != "polygon") {
+    dx -= shapes[selectedShape].centerX; //change in previous center of shape to new one.
+    dy -= shapes[selectedShape].centerY;
+  }
+
+  var shape = shapes[shapeIndex];
+  switch (shape.type) {
     case "circle":
-      return new Shape("circle", [x, y, 50]);
-      break;
     case "ellipse":
-      return new Shape("ellipse", [x, y, 100, 50]);
-      break;
-    case "curve":
-      return new Shape("curve", [
-        x - 50, y + 25, // start point on first quardratic curve.
-        x - 25, y - 25, // control point on first quardratic curve
-        x, y, //end point and start point: first/second curve.
-        x + 25, y + 25, // control point on second quardratic curve
-        x + 50, y - 25 // end point on second quardratic curve
-      ]);
+      //if circle or ellipse just translate center.
+      shape.coordinates[0] += dx;
+      shape.coordinates[1] += dy;
       break;
     default:
+      for (var i = 0; i < shape.coordinates.length; i += 2) {
+        shape.coordinates[i] += dx
+        shape.coordinates[i + 1] += dy;
+      }
+
   }
+  shape.centerX = x; //update center of shape.
+  shape.centerY = y;
 }
 
-//Translate poly: because polylines and polygons are constructed on the fly, they need a special translate method.
-function translatePoly(shapeIndex, x, y) {
-  var shape = shapes[shapeIndex];
-  for (var i = 0; i < shape.coordinates.length; i += 2) {
-    shape.coordinates[i] += x
-    shape.coordinates[i + 1] += y;
-  }
-}
 
 //changes last coordinate of poly to given coordinates
 function changeLastVertex(x, y) {
@@ -410,7 +466,7 @@ function changeLastVertex(x, y) {
 //make selection and update flag to reflect selected shape.
 function makeSelection(coordinates) {
   //if there are shapes that have been drawn and we're not in poly mode.
-  if (shapes.length > 0 && polyType == "") {
+  if (shapes.length > 0 && polyType == "" && mode == "") {
     //for all shape paths check if pointer lies in any path of any shape stored so far.
     for (var i = 0; i < shapes.length; i++) {
       if (canvas1.context.isPointInPath(shapes[i].path, coordinates[0], coordinates[1]) ||
@@ -442,10 +498,12 @@ function initPoly(coordinates) {
   if (polyType != "") {
     //if first click add new polygon or polyline
     if (startPolyDraw) {
-      //add 0,0 at end because mousemove changes those values for rubberbanding.
+      //add -1000,-1000 at end because mousemove changes those values for rubberbanding.
       //-1000 is a place holder for next click coordinates.
-      shapes.push(new Shape(polyType, [coordinates[0], coordinates[1], -1000, -1000]));
-      startPolyDraw = false; //turn poly initialization off until next time poly burron is clicked
+      var newShape = new Shape(polyType, 0, 0); //create new shape.
+      newShape.coordinates = [coordinates[0], coordinates[1], -1000, -1000]; //add clicked coordinate and shapeholder coordinates
+      shapes.push(newShape); //add it to shapes.
+      startPolyDraw = false; //turn poly initialization off until next time poly button is clicked
     } else {
       //if vertices have been added to shape by mouse move, last 2 points won't be -1000
       if (shapes[shapes.length - 1].coordinates[shapes[shapes.length - 1].coordinates.length - 2] != -1000) {
@@ -492,6 +550,50 @@ function finalizePoly(coordinates) {
   canvas1.draw();
   startPolyDraw = false;
   polyType = "";
+}
+
+
+//rotate a shape at a given point.
+function rotateShape(shapeIndex, context) {
+  var shape = shapes[shapeIndex];
+  var rotationPointX = shape.centerX; // make point of rotation center of shape.
+  var rotationPointY = shape.centerY;
+  var coordinates = shape.coordinates;
+  var tempWorkArr = coordinates.slice(0); //copy coordinates into temp array, we don't want to change the original yet.   //original values saved to be used in calculations.
+  var angle = 2 * (Math.PI / 180);
+
+
+
+  context.save();
+  switch (shape.type) {
+    case "circle":
+    case "ellipse":
+      //basically for circle and ellipse rotation just change the angle at which they are drawn since we are rotating about the center, no matrix needed.
+      shape.angle += angle;
+      break;
+    default: // Move rotation point to center of the shape.
+      context.translate(rotationPointX, rotationPointY);
+      //translate each point of shape to new rotation point.
+      //(i.e we want to rotate about a given point, not the origin so we translate the coordinate system to that point)
+      for (var i = 0; i < tempWorkArr.length; i += 2) {
+        tempWorkArr[i] -= rotationPointX;
+        tempWorkArr[i + 1] -= rotationPointY;
+      }
+      //***ROTATION MATRIX ***
+      //This calculation is shorthand for the transformation matrix for rotation. ROtate every point on shape.
+      for (var i = 0; i < tempWorkArr.length; i += 2) {
+        coordinates[i] = (tempWorkArr[i] * Math.cos(angle)) + (tempWorkArr[i + 1] * -Math.sin(angle));
+        coordinates[i + 1] = (tempWorkArr[i] * Math.sin(angle)) + (tempWorkArr[i + 1] * Math.cos(angle));
+      }
+      for (var i = 0; i < tempWorkArr.length; i += 2) {
+        coordinates[i] += rotationPointX;
+        coordinates[i + 1] += rotationPointY;
+      }
+
+  }
+
+  context.restore();
+  canvas1.draw();
 }
 
 /* This function iterates through all html elements with the class shapeButton and innitializes them as draggable */
