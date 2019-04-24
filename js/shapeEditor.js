@@ -172,12 +172,11 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
       case "circle":
       case "ellipse":
         //put icon at top of circle or ellipse
-        x = this.coordinates[0];
-        //if ellipse it will have a fourth coordinate(x radius), use that to place icon.
-        y = this.coordinates[1] - this.coordinates[3];
+        x = this.centerX + (this.coordinates[3] * Math.sin(this.angle)); //top most x of ellipse = absolute X coordinate + yRadius * sin( rotaion angle)
+        y = this.centerY - (this.coordinates[3] * Math.cos(this.angle)); //top most y of ellipse = absolute Y coordinate - yRadius * cos( rotaion angle)
         //scale icon.
-        scaleIconX = this.coordinates[0] + this.coordinates[2]; //dont need to check if ellipse because x radius has same index as regular radius
-        scaleIconY = this.coordinates[1];
+        scaleIconX = this.coordinates[2] * Math.cos(this.angle) + this.centerX; //left most x of ellipse = xRadius * Cos( rotaion angle) + absolute X coordinate.
+        scaleIconY = this.coordinates[2] * Math.sin(this.angle) + this.centerY; //left most y of ellipse = xRadius * Sin( rotaion angle) + absolute Y coordinate.
         break;
       case "curve":
         //place icon at midpoint of curve.
@@ -560,9 +559,7 @@ function rotateShape(shapeIndex, context) {
   var rotationPointY = shape.centerY;
   var coordinates = shape.coordinates;
   var tempWorkArr = coordinates.slice(0); //copy coordinates into temp array, we don't want to change the original yet.   //original values saved to be used in calculations.
-  var angle = 2 * (Math.PI / 180);
-
-
+  var angle = (xChangeCanvas < 0) ? -2 * (Math.PI / 180) : 2 * (Math.PI / 180); //if mouse dragged to left rotate counter clockwise, otherwise...
 
   context.save();
   switch (shape.type) {
