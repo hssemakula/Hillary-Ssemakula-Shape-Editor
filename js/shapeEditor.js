@@ -8,6 +8,7 @@ var selectedShape = -100; //index to note selected shape.
 var xChangeCanvas = 0; //variables to keep track of change in mouse position within canavs: used to ploy transformations.
 var yChangeCanvas = 0;
 
+
 function getMouseCoordinates(event) {
   //get mouse position
   var rect = event.target.getBoundingClientRect();
@@ -22,7 +23,47 @@ function Shape(type, coordinates) {
   this.selected = false;
   this.thickness = 3;
   this.color = "#2E86C1";
+  this.rotationIcon;
+  this.scaleIcon;
 }
+
+/*
+
+Scale ICON
+var x = 100;
+var y = 75;
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+ctx.beginPath();
+ctx.lineWidth = 2;
+ctx.arc(x,y, 5, 0, 2 * Math.PI);
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 4;
+    ctx.strokeStyle = "white";
+    ctx.fillStyle = "white";
+    ctx.fill();
+ctx.stroke();
+*/
+
+/*
+ROTATION ICON
+var x = 100;
+var y = 75;
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+ctx.beginPath();
+ctx.lineWidth = 2;
+ctx.arc(x,y, 10, 0, 1.5 * Math.PI);
+ctx.moveTo(x+1, y);
+ctx.lineTo(x+2, y-5);
+ctx.moveTo(x+1, y-10);
+ctx.lineTo(x+15, y);
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 4;
+    ctx.strokeStyle = "white";
+ctx.stroke();
+
+*/
 
 //Draw function for shape object.
 Shape.prototype.draw = function(context) {
@@ -82,7 +123,100 @@ Shape.prototype.draw = function(context) {
   }
   context.closePath(this.path);
   context.stroke(this.path);
+  this.drawRotaionAndMoveIcons(context);
 }
+
+
+
+//Shape function to draw rotation and scale icons.
+Shape.prototype.drawRotaionAndMoveIcons = function(context) {
+  //if selected draw rotation icon
+  if (this.selected) {
+    var x;
+    var y;
+    var scaleIconX;
+    var scaleIconY;
+
+    switch (this.type) {
+      case "line":
+      case "polyline":
+      case "polygon":
+        //get midpoint of first line on shape.
+        x = (this.coordinates[0] + this.coordinates[2]) / 2;
+        y = (this.coordinates[1] + this.coordinates[3]) / 2;
+        //scale icon coordinates
+        scaleIconX = this.coordinates[2];
+        scaleIconY = this.coordinates[3];
+        break;
+      case "triangle":
+        //put icon at top vertex.
+        y = this.coordinates[3];
+        x = this.coordinates[2];
+        //scale icon.
+        scaleIconX = this.coordinates[1];
+        scaleIconY = this.coordinates[0];
+        break;
+      case "circle":
+      case "ellipse":
+        //put icon at top of circle or ellipse
+        x = this.coordinates[0];
+        //if ellipse it will have a fourth coordinate(x radius), use that to place icon.
+        y = String(this.coordinates[3]) == 'undefined' ? this.coordinates[1] - this.coordinates[2] : this.coordinates[1] - this.coordinates[3];
+        //scale icon.
+        scaleIconX = this.coordinates[0] + this.coordinates[2]; //dont need to check if ellipse because x radius has same index as regular radius
+        scaleIconY = this.coordinates[1];
+        break;
+      case "curve":
+        //place icon at midpoint of curve.
+        x = this.coordinates[4];
+        y = this.coordinates[5];
+        //scale icon.
+        scaleIconX = this.coordinates[8];
+        scaleIconY = this.coordinates[9];
+        break;
+      case "rectangle":
+      case "square":
+        //place icon at half the width.
+        x = this.coordinates[0] + this.coordinates[2] / 2;
+        y = this.coordinates[1];
+        //scale icon.
+        scaleIconX = this.coordinates[0] + this.coordinates[2];
+        scaleIconY = this.coordinates[1] + this.coordinates[3] / 2;
+        break;
+      default:
+
+    }
+    this.rotationIcon = new Path2D();
+    this.scaleIcon = new Path2D();
+
+    //draw rotation icon
+    context.beginPath(this.rotationIcon);
+    context.lineWidth = 2;
+    context.strokeStyle = "black"
+    var i = y - 10; //displace the icon alittle bit on the y axis.
+    context.arc(x, i, 5, 0, 1.5 * Math.PI);
+    context.moveTo(x + 7, i);
+    context.lineTo(x + 2, i + 1);
+    context.moveTo(x + 6, i);
+    context.lineTo(x + 7, i + 4);
+    context.shadowColor = 'black';
+    context.shadowBlur = 4;
+    context.strokeStyle = "white";
+    context.closePath(this.rotationIcon);
+    context.stroke();
+
+    //-----------------draw scale icon.
+    context.beginPath(this.scaleIcon);
+    context.arc(scaleIconX, scaleIconY, 5, 0, 2 * Math.PI);
+    context.strokeStyle = "gray";
+    context.lineWidth = .7
+    context.fillStyle = "white";
+    context.fill();
+    context.closePath(this.scaleIcon);
+    context.stroke();
+  }
+}
+
 
 function CanvasObject(canvas) {
   this.canvas = canvas;
@@ -191,6 +325,15 @@ $(function() {
     finalizePoly(getMouseCoordinates(event));
   });
 
+  $("#canvas").mouseout(function(event) {
+    //causes infine line to be drawn
+    //if mouse is moved outside canvas while poly is being defined, finalize poly with last known click.
+    /*  if (polyType != "" && shapes.length > 0) {
+        var coordinates = shapes[shapes.length - 1].coordinates;
+        finalizePoly(coordinates[coordinates.length - 2], coordinates[coordinates.length - 1]);
+      } */
+  });
+
   //--------------------- END MOUSE EVENTS ----------------------------
 
 
@@ -223,7 +366,6 @@ $(function() {
       var x = event.clientX - rect.left; //x position within the canvas
       var y = event.clientY - rect.top; //y position within the canvas
       shapes.push(makeShape(String(ui.draggable.attr("id")), x, y));
-
       canvas1.draw();
     }
   });
@@ -235,7 +377,7 @@ $(function() {
 function makeShape(shapeType, x, y) {
   switch (shapeType) {
     case "line":
-      return new Shape("line", [x - 50, y, x + 50, y - 150]);
+      return new Shape("line", [x - 50, y, x + 50, y]);
       break;
     case "triangle":
       return new Shape("triangle", [x + 50, y + 50, x, y - 50, x - 50, y + 50]);
@@ -314,6 +456,10 @@ function makeSelection(coordinates) {
       shapes[selectedShape].selected = false;
       selectedShape = -100
     }
+  } //if polytype is being drawn no shape should be selected.
+  else if (polyType != "" && selectedShape != -100) {
+    shapes[selectedShape].selected = false;
+    selectedShape = -100
   }
 }
 
