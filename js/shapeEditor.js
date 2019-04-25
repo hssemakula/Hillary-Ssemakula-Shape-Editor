@@ -1,3 +1,6 @@
+/* HIllary  Ssemakula
+ */
+
 var shapes = [];
 var canvas = document.getElementById("canvas");
 var polyType = "";
@@ -26,7 +29,8 @@ function Shape(type, x, y) {
   this.lineColor = "#2E86C1";
   this.fillColor = "";
   this.rotationIconPath; //rotation icon
-  this.scaleIconPath; //scale icon
+  this.scaleXIconPath; //scaleX icon paths
+  this.scaleYIconPath; //scaleY icon
   this.centerX = x; //coorinates for center of shape, poly's don't use this
   this.centerY = y;
   this.angle = 0; //angle of rotation at which shape is currently rotated.
@@ -145,61 +149,81 @@ Shape.prototype.draw = function(context) {
 Shape.prototype.drawRotaionAndMoveIcons = function(context) {
   //if selected draw rotation icon
   if (this.selected) {
-    var x;
-    var y;
-    var scaleIconX;
-    var scaleIconY;
+    var rotateIconX;
+    var rotateIconY;
+    var scaleXIconX;
+    var scaleXIconY;
+    var scaleYIconX;
+    var scaleYIconY;
 
     switch (this.type) {
       case "line":
       case "polyline":
       case "polygon":
         //get midpoint of first line on shape.
-        x = (this.coordinates[0] + this.coordinates[2]) / 2;
-        y = (this.coordinates[1] + this.coordinates[3]) / 2;
-        //scale icon coordinates
-        scaleIconX = this.coordinates[2];
-        scaleIconY = this.coordinates[3];
+        rotateIconX = (this.coordinates[0] + this.coordinates[2]) / 2;
+        rotateIconY = (this.coordinates[1] + this.coordinates[3]) / 2;
+        this.centerX = rotateIconX; //for polys set this x and x as center because polys don't have a center
+        this.centerY = rotateIconY;
+        //scale x icon coordinates
+        scaleXIconX = this.coordinates[2];
+        scaleXIconY = this.coordinates[3];
+
+        //scale y icon coordinates
+        scaleYIconX = (this.type == "line") ? this.coordinates[0] : this.coordinates[4];
+        scaleYIconY = (this.type == "line") ? this.coordinates[1] : this.coordinates[5];
         break;
       case "triangle":
         //put icon at top vertex.
-        y = this.coordinates[3];
-        x = this.coordinates[2];
-        //scale icon.
-        scaleIconX = this.coordinates[0];
-        scaleIconY = this.coordinates[1];
+        rotateIconY = this.coordinates[3];
+        rotateIconX = this.coordinates[2];
+        //scale x icon.
+        scaleXIconX = (this.coordinates[0] + this.coordinates[2]) / 2; //on midpoint of right side
+        scaleXIconY = (this.coordinates[1] + this.coordinates[3]) / 2;
+
+        //scale y icon
+        scaleYIconX = (this.coordinates[0] + this.coordinates[4]) / 2; //on midpoint of base.
+        scaleYIconY = (this.coordinates[1] + this.coordinates[5]) / 2;
         break;
       case "circle":
       case "ellipse":
         //put icon at top of circle or ellipse
-        x = this.centerX + (this.coordinates[3] * Math.sin(this.angle)); //top most x of ellipse = absolute X coordinate + yRadius * sin( rotaion angle)
-        y = this.centerY - (this.coordinates[3] * Math.cos(this.angle)); //top most y of ellipse = absolute Y coordinate - yRadius * cos( rotaion angle)
+        rotateIconX = this.centerX + (this.coordinates[3] * Math.sin(this.angle)); //top most x of ellipse = absolute X coordinate + yRadius * sin( rotaion angle)
+        rotateIconY = this.centerY - (this.coordinates[3] * Math.cos(this.angle)); //top most y of ellipse = absolute Y coordinate - yRadius * cos( rotaion angle)
         //scale icon.
-        scaleIconX = this.coordinates[2] * Math.cos(this.angle) + this.centerX; //left most x of ellipse = xRadius * Cos( rotaion angle) + absolute X coordinate.
-        scaleIconY = this.coordinates[2] * Math.sin(this.angle) + this.centerY; //left most y of ellipse = xRadius * Sin( rotaion angle) + absolute Y coordinate.
+        scaleXIconX = this.coordinates[2] * Math.cos(this.angle) + this.centerX; //left most x of ellipse = xRadius * Cos( rotaion angle) + absolute X coordinate.
+        scaleXIconY = this.coordinates[2] * Math.sin(this.angle) + this.centerY; //left most y of ellipse = xRadius * Sin( rotaion angle) + absolute Y coordinate.
         break;
       case "curve":
         //place icon at midpoint of curve.
-        x = this.coordinates[4];
-        y = this.coordinates[5];
-        //scale icon.
-        scaleIconX = this.coordinates[8];
-        scaleIconY = this.coordinates[9];
+        rotateIconX = this.coordinates[4];
+        rotateIconY = this.coordinates[5];
+        //scale x icon.
+        scaleXIconX = this.coordinates[8];
+        scaleXIconY = this.coordinates[9];
+
+        //scale y icon.
+        scaleYIconX = this.coordinates[0];
+        scaleYIconY = this.coordinates[1];
         break;
       case "rectangle":
       case "square":
         //place icon at half of the first line.
-        x = (this.coordinates[0] + this.coordinates[2]) / 2;
-        y = (this.coordinates[1] + this.coordinates[3]) / 2;
-        //scale icon.
-        scaleIconX = (this.coordinates[2] + this.coordinates[4]) / 2;
-        scaleIconY = (this.coordinates[3] + this.coordinates[5]) / 2;
+        rotateIconX = (this.coordinates[0] + this.coordinates[2]) / 2;
+        rotateIconY = (this.coordinates[1] + this.coordinates[3]) / 2;
+        //scale x icon.
+        scaleXIconX = (this.coordinates[2] + this.coordinates[4]) / 2;
+        scaleXIconY = (this.coordinates[3] + this.coordinates[5]) / 2;
+        //scale y icon.
+        scaleYIconX = (this.coordinates[4] + this.coordinates[6]) / 2;
+        scaleYIconY = (this.coordinates[5] + this.coordinates[7]) / 2;
         break;
       default:
 
     }
     this.rotationIconPath = new Path2D();
-    this.scaleIconPath = new Path2D();
+    this.scaleXIconPath = new Path2D();
+    this.scaleYIconPath = new Path2D();
 
     //draw rotation icon
 
@@ -208,24 +232,32 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
     context.shadowColor = 'black';
     context.shadowBlur = 4;
     context.strokeStyle = "white";
-    var i = y; //displace the icon alittle bit on the y axis.
     context.beginPath(this.rotationIconPath);
-    this.rotationIconPath.arc(x, i, 5, 0, 1.5 * Math.PI);
-    this.rotationIconPath.moveTo(x + 7, i);
-    this.rotationIconPath.lineTo(x + 2, i + 1);
-    this.rotationIconPath.moveTo(x + 6, i);
-    this.rotationIconPath.lineTo(x + 7, i + 4);
+    this.rotationIconPath.arc(rotateIconX, rotateIconY, 5, 0, 1.5 * Math.PI);
+    this.rotationIconPath.moveTo(rotateIconX + 7, rotateIconY);
+    this.rotationIconPath.lineTo(rotateIconX + 2, rotateIconY + 1);
+    this.rotationIconPath.moveTo(rotateIconX + 6, rotateIconY);
+    this.rotationIconPath.lineTo(rotateIconX + 7, rotateIconY + 4);
     context.closePath(this.rotationIcon);
     context.stroke(this.rotationIconPath);
 
-    //-----------------draw scale icon.
+    //-----------------draw scale x icon.
     context.strokeStyle = "white";
     context.lineWidth = 5; //helps icon appear on top.
     context.fillStyle = "white";
-    context.beginPath(this.scaleIconPath);
-    this.scaleIconPath.arc(scaleIconX, scaleIconY, 2, 0, 2 * Math.PI);
-    context.closePath(this.scaleIconPath);
-    context.stroke(this.scaleIconPath);
+    context.beginPath(this.scaleXIconPath);
+    this.scaleXIconPath.arc(scaleXIconX, scaleXIconY, 2, 0, 2 * Math.PI);
+    context.closePath(this.scaleXIconPath);
+    context.stroke(this.scaleXIconPath);
+
+    //-----------------draw scale y icon.
+    context.strokeStyle = "#FADBD8";
+    context.lineWidth = 5; //helps icon appear on top.
+    context.fillStyle = "white";
+    context.beginPath(this.scaleYIconPath);
+    this.scaleYIconPath.arc(scaleYIconX, scaleYIconY, 2, 0, 2 * Math.PI);
+    context.closePath(this.scaleYIconPath);
+    context.stroke(this.scaleYIconPath);
   }
 }
 
@@ -295,10 +327,9 @@ $(function() {
       if (canvas1.context.isPointInPath(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1]) ||
         canvas1.context.isPointInStroke(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1])) {
         mode = "rotate";
-      } else if (canvas1.context.isPointInPath(shapes[selectedShape].scaleIconPath, coordinates[0], coordinates[1]) ||
-        canvas1.context.isPointInStroke(shapes[selectedShape].scaleIconPath, coordinates[0], coordinates[1])) {
-        mode = "scale";
-        alert("scale");
+      } else if (canvas1.context.isPointInPath(shapes[selectedShape].scaleXIconPath, coordinates[0], coordinates[1]) ||
+        canvas1.context.isPointInStroke(shapes[selectedShape].scaleXIconPath, coordinates[0], coordinates[1])) {
+        mode = "scaleX";
       }
     }
     makeSelection(coordinates); //if mouse down near another object, it can be selected.
@@ -317,6 +348,9 @@ $(function() {
         case "rotate":
           rotateShape(selectedShape, canvas1.context, x, y);
           break;
+        case "scaleX":
+        case "scaleY":
+          scaleShape(selectedShape, canvas1.context);
         default:
 
       }
@@ -636,18 +670,26 @@ function scaleShape(shapeIndex, context) {
   var scalePointY = shape.centerY;
   var coordinates = shape.coordinates;
   var tempWorkArr = coordinates.slice(0); //copy coordinates into temp array, we don't want to change the original yet.   //original values saved to be used in calculations.
-  var scaleFactorX;
-  var scaleFactorY = 0;
-
-  if (xChangeCanvas < 0) scaleFactorX = 0.9;
-
-
+  var scaleFactorX = 1;
+  var scaleFactorY = 1;
+  context.save();
+  if (xChangeCanvas < 0) scaleFactorX = 0.995;
+  else {
+    scaleFactorX = 1.005;
+  }
+  if (yChangeCanvas < 0) scaleFactorY = 0.995;
+  else {
+    scaleFactorY = 1.005;
+  }
 
   switch (shape.type) {
     case "circle":
     case "ellipse":
       //basically for circle and ellipse rotation just change the angle at which they are drawn since we are rotating about the center, no matrix needed.
+      console.log(shape.coordinates[2]);
       shape.coordinates[2] *= scaleFactorX;
+      shape.coordinates[3] *= scaleFactorY;
+      console.log(shape.coordinates[2]);
       break;
     default: // Move rotation point to center of the shape.
 
@@ -676,6 +718,7 @@ function scaleShape(shapeIndex, context) {
       }
 
   }
+  context.restore();
   canvas1.draw();
 }
 
