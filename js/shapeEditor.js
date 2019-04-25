@@ -29,7 +29,7 @@ function Shape(type, x, y) {
   this.scaleIconPath; //scale icon
   this.centerX = x; //coorinates for center of shape, poly's don't use this
   this.centerY = y;
-  this.angle = 0; //angle of rotation if any, poly's dont use this.
+  this.angle = 0; //angle of rotation at which shape is currently rotated.
 }
 
 //build shape using given center point
@@ -110,7 +110,7 @@ Shape.prototype.draw = function(context) {
       break;
     case "circle":
     case "ellipse":
-      this.path.ellipse(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3], this.angle, 0, 2 * Math.PI);
+      this.path.ellipse(this.coordinates[0], this.coordinates[1], this.coordinates[2], this.coordinates[3], this.angle, 0, 2 * Math.PI, true);
       break;
     case "curve":
       this.path.moveTo(this.coordinates[0], this.coordinates[1]);
@@ -283,6 +283,11 @@ $(function() {
 
 
   //--------------------BEGIN MOUSE EVENTS---------------------------------
+  $("#wrapper").mouseup(function(event) { //when cursor is off canvas and mouse is up stop rotating or anything.
+    isMouseDown = false;
+    mode = "";
+  });
+
   $("#canvas").mousedown(function(event) {
     isMouseDown = true;
     var coordinates = getMouseCoordinates(event);
@@ -310,7 +315,7 @@ $(function() {
 
       switch (mode) {
         case "rotate":
-          rotateShape(selectedShape, canvas1.context);
+          rotateShape(selectedShape, canvas1.context, x, y);
           break;
         default:
 
@@ -552,21 +557,97 @@ function finalizePoly(coordinates) {
 }
 
 
-//rotate a shape at a given point.
-function rotateShape(shapeIndex, context) {
+//rotate a shape at the center point.
+function rotateShape(shapeIndex, context, x, y) {
   var shape = shapes[shapeIndex];
   var rotationPointX = shape.centerX; // make point of rotation center of shape.
   var rotationPointY = shape.centerY;
   var coordinates = shape.coordinates;
   var tempWorkArr = coordinates.slice(0); //copy coordinates into temp array, we don't want to change the original yet.   //original values saved to be used in calculations.
-  var angle = (xChangeCanvas < 0) ? -2 * (Math.PI / 180) : 2 * (Math.PI / 180); //if mouse dragged to left rotate counter clockwise, otherwise...
+  var angle = 0;
+
+  //calculate angle where mouse click is
+  //make triangle between clicked point and center, find angle using cosine.
+  var d2 = Math.sqrt(0 + Math.pow((y - shape.centerY), 2)); //distance of right angle line to same level as clicked point.
+  var d1 = Math.sqrt(Math.pow((x - shape.centerX), 2) + Math.pow((y - shape.centerY), 2));
+
+  angle = Math.acos(d2 / d1);
+
+  //adjust angle calculated to place it in right quadrant. This trash is very confusing guessed on it for about 2 hours.
+  if ((x - shape.centerX) < 0 && (y - shape.centerY) > 0) {
+    angle = Math.PI + angle;
+  } else if ((x - shape.centerX) > 0 && (y - shape.centerY) > 0) {
+    angle = Math.PI - angle;
+  } else if ((x - shape.centerX) < 0 && (y - shape.centerY) < 0) {
+    angle = (2 * Math.PI) - angle;
+  }
 
   context.save();
   switch (shape.type) {
     case "circle":
     case "ellipse":
       //basically for circle and ellipse rotation just change the angle at which they are drawn since we are rotating about the center, no matrix needed.
-      shape.angle += angle;
+      shape.angle = angle;
+      break;
+    default: // Move rotation point to center of the shape.
+
+      //if shape is polyline or polygon, we can't tell what the center is since it's user defined: we used the exact point where the rotaion icon is
+      if (shape.type == "polygon" || shape.type == "polyline") {
+        rotationPointX = (shape.coordinates[0] + shape.coordinates[2]) / 2;
+        rotationPointY = (shape.coordinates[1] + shape.coordinates[3]) / 2;
+      }
+
+      context.translate(rotationPointX, rotationPointY);
+      //translate each point of shape to new rotation point.
+      //(i.e we want to rotate about a given point, not the origin so we translate the coordinate system to that point)
+      for (var i = 0; i < tempWorkArr.length; i += 2) {
+        tempWorkArr[i] -= rotationPointX;
+        tempWorkArr[i + 1] -= rotationPointY;
+      }
+      var changeInAngle = angle - shape.angle; //if shape was already rotated, only rotate it by difference.
+
+      //***ROTATION MATRIX ***
+      //This calculation is shorthand for the transformation matrix for rotation. ROtate every point on shape.
+      for (var i = 0; i < tempWorkArr.length; i += 2) {
+        coordinates[i] = (tempWorkArr[i] * Math.cos(changeInAngle)) + (tempWorkArr[i + 1] * -Math.sin(changeInAngle));
+        coordinates[i + 1] = (tempWorkArr[i] * Math.sin(changeInAngle)) + (tempWorkArr[i + 1] * Math.cos(changeInAngle));
+      }
+      for (var i = 0; i < tempWorkArr.length; i += 2) {
+        coordinates[i] += rotationPointX;
+        coordinates[i + 1] += rotationPointY;
+      }
+
+      //update angle at which shape is rotated.
+      shape.angle = angle;
+
+
+  }
+
+  context.restore();
+  canvas1.draw();
+}
+
+
+//scale shape while it 's at center.
+function scaleShape(shapeIndex, context) {
+
+  var shape = shapes[shapeIndex];
+  var scalePointX = shape.centerX; // fix shape at it's center during scaling.
+  var scalePointY = shape.centerY;
+  var coordinates = shape.coordinates;
+  var tempWorkArr = coordinates.slice(0); //copy coordinates into temp array, we don't want to change the original yet.   //original values saved to be used in calculations.
+  var scaleFactorX;
+  var scaleFactorY = 0;
+
+  if (xChangeCanvas < 0) scaleFactorX = 0.9;
+
+
+
+  switch (shape.type) {
+    case "circle":
+    case "ellipse":
+      //basically for circle and ellipse rotation just change the angle at which they are drawn since we are rotating about the center, no matrix needed.
+      shape.coordinates[2] *= scaleFactorX;
       break;
     default: // Move rotation point to center of the shape.
 
@@ -595,8 +676,6 @@ function rotateShape(shapeIndex, context) {
       }
 
   }
-
-  context.restore();
   canvas1.draw();
 }
 
