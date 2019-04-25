@@ -1,4 +1,5 @@
 /* HIllary  Ssemakula
+WARNING: Alot of trigonemetry ahead
  */
 
 var shapes = [];
@@ -8,7 +9,7 @@ var startPolyDraw = false;
 var isMouseDown = false;
 var canvas1 = new CanvasObject(canvas); //This is the global canvas, we'll be working with.
 var selectedShape = -100; //index to note selected shape.
-var xChangeCanvas = 0; //variables to keep track of change in mouse position within canavs: used to ploy transformations.
+var xChangeCanvas = 0; //tracks changes in mouse x and y canvas wide.
 var yChangeCanvas = 0;
 var mode = ""; //tracks whether we are rotating or scaling.
 
@@ -44,7 +45,7 @@ Shape.prototype.build = function() {
       this.coordinates = [this.centerX - 50, this.centerY, this.centerX + 50, this.centerY];
       break;
     case "triangle":
-      this.coordinates = [this.centerX + 50, this.centerY + 50, this.centerX, this.centerY - 50,
+      this.coordinates = [this.centerX, this.centerY - 50, this.centerX + 50, this.centerY + 50,
         this.centerX - 50, this.centerY + 50
       ];
       break;
@@ -175,24 +176,27 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
         break;
       case "triangle":
         //put icon at top vertex.
-        rotateIconY = this.coordinates[3];
-        rotateIconX = this.coordinates[2];
+        rotateIconY = this.coordinates[1];
+        rotateIconX = this.coordinates[0];
         //scale x icon.
         scaleXIconX = (this.coordinates[0] + this.coordinates[2]) / 2; //on midpoint of right side
         scaleXIconY = (this.coordinates[1] + this.coordinates[3]) / 2;
 
         //scale y icon
-        scaleYIconX = (this.coordinates[0] + this.coordinates[4]) / 2; //on midpoint of base.
-        scaleYIconY = (this.coordinates[1] + this.coordinates[5]) / 2;
+        scaleYIconX = (this.coordinates[2] + this.coordinates[4]) / 2; //on midpoint of base.
+        scaleYIconY = (this.coordinates[3] + this.coordinates[5]) / 2;
         break;
       case "circle":
       case "ellipse":
         //put icon at top of circle or ellipse
         rotateIconX = this.centerX + (this.coordinates[3] * Math.sin(this.angle)); //top most x of ellipse = absolute X coordinate + yRadius * sin( rotaion angle)
         rotateIconY = this.centerY - (this.coordinates[3] * Math.cos(this.angle)); //top most y of ellipse = absolute Y coordinate - yRadius * cos( rotaion angle)
-        //scale icon.
+        //scale x icon.
         scaleXIconX = this.coordinates[2] * Math.cos(this.angle) + this.centerX; //left most x of ellipse = xRadius * Cos( rotaion angle) + absolute X coordinate.
         scaleXIconY = this.coordinates[2] * Math.sin(this.angle) + this.centerY; //left most y of ellipse = xRadius * Sin( rotaion angle) + absolute Y coordinate.
+        //scale y icon.
+        scaleYIconX = this.centerX - this.coordinates[3] * Math.sin(this.angle); // center x - xRadius* sin angle
+        scaleYIconY = this.centerY + this.coordinates[3] * Math.cos(this.angle); //center y - xRadius* cos angle
         break;
       case "curve":
         //place icon at midpoint of curve.
@@ -251,7 +255,7 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
     context.stroke(this.scaleXIconPath);
 
     //-----------------draw scale y icon.
-    context.strokeStyle = "#FADBD8";
+    context.strokeStyle = "white";
     context.lineWidth = 5; //helps icon appear on top.
     context.fillStyle = "white";
     context.beginPath(this.scaleYIconPath);
@@ -324,12 +328,20 @@ $(function() {
     isMouseDown = true;
     var coordinates = getMouseCoordinates(event);
     if (selectedShape != -100) {
+      //if clicked on rotation button
       if (canvas1.context.isPointInPath(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1]) ||
         canvas1.context.isPointInStroke(shapes[selectedShape].rotationIconPath, coordinates[0], coordinates[1])) {
         mode = "rotate";
-      } else if (canvas1.context.isPointInPath(shapes[selectedShape].scaleXIconPath, coordinates[0], coordinates[1]) ||
+      }
+      //if clicked on sacle x button
+      else if (canvas1.context.isPointInPath(shapes[selectedShape].scaleXIconPath, coordinates[0], coordinates[1]) ||
         canvas1.context.isPointInStroke(shapes[selectedShape].scaleXIconPath, coordinates[0], coordinates[1])) {
         mode = "scaleX";
+      }
+      //if clicked on sacle y button
+      else if (canvas1.context.isPointInPath(shapes[selectedShape].scaleYIconPath, coordinates[0], coordinates[1]) ||
+        canvas1.context.isPointInStroke(shapes[selectedShape].scaleYIconPath, coordinates[0], coordinates[1])) {
+        mode = "scaleY";
       }
     }
     makeSelection(coordinates); //if mouse down near another object, it can be selected.
@@ -350,7 +362,7 @@ $(function() {
           break;
         case "scaleX":
         case "scaleY":
-          scaleShape(selectedShape, canvas1.context);
+          scaleShape(selectedShape, canvas1.context, mode, x, y);
         default:
 
       }
@@ -607,12 +619,12 @@ function rotateShape(shapeIndex, context, x, y) {
 
   angle = Math.acos(d2 / d1);
 
-  //adjust angle calculated to place it in right quadrant. This trash is very confusing guessed on it for about 2 hours.
-  if ((x - shape.centerX) < 0 && (y - shape.centerY) > 0) {
+  //adjust angle calculated to place it in right quadrant.
+  if ((x - shape.centerX) < 0 && (y - shape.centerY) > 0) { //angle is in third quadrant add 180
     angle = Math.PI + angle;
-  } else if ((x - shape.centerX) > 0 && (y - shape.centerY) > 0) {
+  } else if ((x - shape.centerX) > 0 && (y - shape.centerY) > 0) { //angle is in second quadrant subtract 180
     angle = Math.PI - angle;
-  } else if ((x - shape.centerX) < 0 && (y - shape.centerY) < 0) {
+  } else if ((x - shape.centerX) < 0 && (y - shape.centerY) < 0) { //angle is in fourth quadrant subtract it from 360
     angle = (2 * Math.PI) - angle;
   }
 
@@ -653,72 +665,97 @@ function rotateShape(shapeIndex, context, x, y) {
 
       //update angle at which shape is rotated.
       shape.angle = angle;
-
-
   }
-
   context.restore();
   canvas1.draw();
 }
 
 
 //scale shape while it 's at center.
-function scaleShape(shapeIndex, context) {
+function scaleShape(shapeIndex, context, mode, x, y) {
 
   var shape = shapes[shapeIndex];
   var scalePointX = shape.centerX; // fix shape at it's center during scaling.
   var scalePointY = shape.centerY;
   var coordinates = shape.coordinates;
-  var tempWorkArr = coordinates.slice(0); //copy coordinates into temp array, we don't want to change the original yet.   //original values saved to be used in calculations.
   var scaleFactorX = 1;
   var scaleFactorY = 1;
-  context.save();
-  if (xChangeCanvas < 0) scaleFactorX = 0.995;
-  else {
-    scaleFactorX = 1.005;
+
+  //set scale factor, if factor is set to constant value, scaling is good but doesn't allow
+  //for a user's scaling speed. So add the change in x or y but divide it by a constant factor 100,
+  //otherwise the user moves a little bit and the shape scales alot.
+  if (xChangeCanvas < 0) {
+    scaleFactorX = 0.995 + (xChangeCanvas / 100);
+  } else {
+    scaleFactorX = 1.005 + (xChangeCanvas / 100);
   }
-  if (yChangeCanvas < 0) scaleFactorY = 0.995;
-  else {
-    scaleFactorY = 1.005;
+  if (yChangeCanvas < 0) {
+    scaleFactorY = 0.995 + (yChangeCanvas / 100);
+  } else {
+    scaleFactorY = 1.005 + (yChangeCanvas / 100);
   }
 
   switch (shape.type) {
     case "circle":
     case "ellipse":
-      //basically for circle and ellipse rotation just change the angle at which they are drawn since we are rotating about the center, no matrix needed.
-      console.log(shape.coordinates[2]);
-      shape.coordinates[2] *= scaleFactorX;
-      shape.coordinates[3] *= scaleFactorY;
-      console.log(shape.coordinates[2]);
+      //This code effectively scales either the y or x radius.
+      (mode == "scaleX") ? (shape.coordinates[2] += (x - shape.centerX - shape.coordinates[2])) : (shape.coordinates[3] += (y - shape.centerY - shape.coordinates[3]));
       break;
-    default: // Move rotation point to center of the shape.
+    case "rectangle":
+    case "square":
+      if (mode == "scaleX") {
+        var halfWidth = (Math.abs(shape.coordinates[0] - shape.coordinates[2])) / 2;
+        var changeInX = x - shape.centerX - (halfWidth * Math.cos(shape.angle));
+        var changeInY = changeInX * Math.tan(shape.angle);
+        //if width is 0 or less and scale is negative, don't do anything
+        if (shape.coordinates[2] - shape.coordinates[0] <= 0 && changeInX < 0) {} else {
+          shape.coordinates[0] -= changeInX;
+          shape.coordinates[2] += changeInX;
+          shape.coordinates[4] += changeInX;
+          shape.coordinates[6] -= changeInX;
+          shape.coordinates[8] -= changeInX;
+          shape.coordinates[1] -= changeInY;
+          shape.coordinates[3] += changeInY;
+          shape.coordinates[5] += changeInY;
+          shape.coordinates[7] -= changeInY;
+          shape.coordinates[9] -= changeInY;
+        }
+      } else if (mode == "scaleY") {
+        var halfHeight = (Math.abs(shape.coordinates[1] - shape.coordinates[7])) / 2;
+        var changeInY = y - shape.centerY - (halfHeight * Math.cos(shape.angle));
+        var changeInX = changeInY * Math.tan(shape.angle);
+        //if height is 0 or less and scale is negative, don't do anything
+        if (shape.coordinates[7] - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
+          shape.coordinates[0] += changeInX;
+          shape.coordinates[2] += changeInX;
+          shape.coordinates[4] -= changeInX;
+          shape.coordinates[6] -= changeInX;
+          shape.coordinates[8] += changeInX;
+          shape.coordinates[1] -= changeInY;
+          shape.coordinates[3] -= changeInY;
+          shape.coordinates[5] += changeInY;
+          shape.coordinates[7] += changeInY;
+          shape.coordinates[9] -= changeInY;
+        }
 
-      //if shape is polyline or polygon, we can't tell what the center is since it's user defined: we used the exact point where the rotaion icon is
-      if (shape.type == "polygon" || shape.type == "polyline") {
-        rotationPointX = (shape.coordinates[0] + shape.coordinates[2]) / 2;
-        rotationPointY = (shape.coordinates[1] + shape.coordinates[3]) / 2;
       }
+      break;
+    case "triangle":
+      if (mode == "scaleX") {
+        var scaleXX = (shape.coordinates[0] + shape.coordinates[2]) / 2;
+        var scaleXY = (shape.coordinates[1] + shape.coordinates[3]) / 2;
+        var centerToScaleXPoint = Math.sqrt(Math.pow((scaleXX - shape.centerX), 2) + Math.pow((scaleXY - shape.centerY), 2));
 
-      context.translate(rotationPointX, rotationPointY);
-      //translate each point of shape to new rotation point.
-      //(i.e we want to rotate about a given point, not the origin so we translate the coordinate system to that point)
-      for (var i = 0; i < tempWorkArr.length; i += 2) {
-        tempWorkArr[i] -= rotationPointX;
-        tempWorkArr[i + 1] -= rotationPointY;
+        var changeInX = x - shape.centerX - centerToScaleXPoint * Math.cos(shape.angle);
+
+        shape.coordinates[2] += changeInX;
+        shape.coordinates[4] -= changeInX;
+
       }
-      //***ROTATION MATRIX ***
-      //This calculation is shorthand for the transformation matrix for rotation. ROtate every point on shape.
-      for (var i = 0; i < tempWorkArr.length; i += 2) {
-        coordinates[i] = (tempWorkArr[i] * Math.cos(angle)) + (tempWorkArr[i + 1] * -Math.sin(angle));
-        coordinates[i + 1] = (tempWorkArr[i] * Math.sin(angle)) + (tempWorkArr[i + 1] * Math.cos(angle));
-      }
-      for (var i = 0; i < tempWorkArr.length; i += 2) {
-        coordinates[i] += rotationPointX;
-        coordinates[i + 1] += rotationPointY;
-      }
+      break;
+    default:
 
   }
-  context.restore();
   canvas1.draw();
 }
 
