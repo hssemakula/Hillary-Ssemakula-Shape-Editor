@@ -164,15 +164,21 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
         //get midpoint of first line on shape.
         rotateIconX = (this.coordinates[0] + this.coordinates[2]) / 2;
         rotateIconY = (this.coordinates[1] + this.coordinates[3]) / 2;
-        this.centerX = rotateIconX; //for polys set this x and x as center because polys don't have a center
-        this.centerY = rotateIconY;
+        if (this.type != "line") {
+          //for polys set this x and x as center because polys don't have a center
+          this.centerX = rotateIconX;
+          this.centerY = rotateIconY;
+        }
         //scale x icon coordinates
-        scaleXIconX = this.coordinates[2];
-        scaleXIconY = this.coordinates[3];
+        //calculate where to place icon i.e middle of poly or end of line.
+        var index = this.coordinates.length / 2;
+        scaleXIconX = ((this.coordinates.length / 2) % 2 == 0) ? this.coordinates[index] : this.coordinates[index - 1];
+        scaleXIconY = ((this.coordinates.length / 2) % 2 == 0) ? this.coordinates[index + 1] : this.coordinates[index];
 
-        //scale y icon coordinates
-        scaleYIconX = (this.type == "line") ? this.coordinates[0] : this.coordinates[4];
-        scaleYIconY = (this.type == "line") ? this.coordinates[1] : this.coordinates[5];
+        //  polyline, polygon and line don't have yscale. Poly lines and polygons don't have y scale because they are user defined, have center
+
+        scaleYIconX = ((this.coordinates.length / 2) % 2 == 0) ? this.coordinates[index + 2] : this.coordinates[index - 1 + 2];
+        scaleYIconY = ((this.coordinates.length / 2) % 2 == 0) ? this.coordinates[index + 1 + 2] : this.coordinates[index + 2];
         break;
       case "triangle":
         //put icon at top vertex.
@@ -255,7 +261,7 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
     context.stroke(this.scaleXIconPath);
 
     //-----------------draw scale y icon.
-    context.strokeStyle = "white";
+    context.strokeStyle = (this.type == "polyline" || this.type == "polygon") ? "#FADBD8" : "white";
     context.lineWidth = 5; //helps icon appear on top.
     context.fillStyle = "white";
     context.beginPath(this.scaleYIconPath);
@@ -310,10 +316,17 @@ $(function() {
     if (event.originalEvent.detail > 1) {
       return;
     }
+
+
     var coordinates = getMouseCoordinates(event);
-    if (mode != "") makeSelection(coordinates); //some how prevents a shape from getting deselected when you click during a rotion, I don't know how, but it works.
+    if (mode != "") {
+      makeSelection(coordinates); //some how prevents a shape from getting deselected when you click during a rotion, I don't know how, but it works.
+    }
+
     //this is function is also used to draw polys, so draw shouldn't be called here if we're making poly
-    if (polyType == "" && mode == "") canvas1.draw();
+    if (polyType == "" && mode == "") {
+      canvas1.draw();
+    }
   });
 
 
@@ -326,6 +339,7 @@ $(function() {
 
   $("#canvas").mousedown(function(event) {
     isMouseDown = true;
+
     var coordinates = getMouseCoordinates(event);
     if (selectedShape != -100) {
       //if clicked on rotation button
@@ -344,6 +358,7 @@ $(function() {
         mode = "scaleY";
       }
     }
+
     makeSelection(coordinates); //if mouse down near another object, it can be selected.
     initPoly(coordinates); //initilize a polygon if poly button pressed
   });
@@ -358,6 +373,7 @@ $(function() {
 
       switch (mode) {
         case "rotate":
+          console.log(mode, shapes[selectedShape].coordinates);
           rotateShape(selectedShape, canvas1.context, x, y);
           break;
         case "scaleX":
@@ -614,7 +630,7 @@ function rotateShape(shapeIndex, context, x, y) {
 
   //calculate angle where mouse click is
   //make triangle between clicked point and center, find angle using cosine.
-  var d2 = Math.sqrt(0 + Math.pow((y - shape.centerY), 2)); //distance of right angle line to same level as clicked point.
+  var d2 = Math.sqrt(Math.pow((y - shape.centerY), 2)); //distance of right angle line to same level as clicked point.
   var d1 = Math.sqrt(Math.pow((x - shape.centerX), 2) + Math.pow((y - shape.centerY), 2));
 
   angle = Math.acos(d2 / d1);
@@ -650,6 +666,7 @@ function rotateShape(shapeIndex, context, x, y) {
         tempWorkArr[i] -= rotationPointX;
         tempWorkArr[i + 1] -= rotationPointY;
       }
+      if (isNaN(angle)) angle = 0; //fix error where a speedy click produces Nan
       var changeInAngle = angle - shape.angle; //if shape was already rotated, only rotate it by difference.
 
       //***ROTATION MATRIX ***
@@ -666,6 +683,7 @@ function rotateShape(shapeIndex, context, x, y) {
       //update angle at which shape is rotated.
       shape.angle = angle;
   }
+
   context.restore();
   canvas1.draw();
 }
@@ -685,14 +703,14 @@ function scaleShape(shapeIndex, context, mode, x, y) {
   //for a user's scaling speed. So add the change in x or y but divide it by a constant factor 100,
   //otherwise the user moves a little bit and the shape scales alot.
   if (xChangeCanvas < 0) {
-    scaleFactorX = 0.995 + (xChangeCanvas / 100);
+    scaleFactorX = 0.995 + (xChangeCanvas / 1000);
   } else {
-    scaleFactorX = 1.005 + (xChangeCanvas / 100);
+    scaleFactorX = 1.005 + (xChangeCanvas / 1000);
   }
   if (yChangeCanvas < 0) {
-    scaleFactorY = 0.995 + (yChangeCanvas / 100);
+    scaleFactorY = 0.995 + (yChangeCanvas / 1000);
   } else {
-    scaleFactorY = 1.005 + (yChangeCanvas / 100);
+    scaleFactorY = 1.005 + (yChangeCanvas / 1000);
   }
 
   switch (shape.type) {
@@ -745,12 +763,54 @@ function scaleShape(shapeIndex, context, mode, x, y) {
         var scaleXX = (shape.coordinates[0] + shape.coordinates[2]) / 2;
         var scaleXY = (shape.coordinates[1] + shape.coordinates[3]) / 2;
         var centerToScaleXPoint = Math.sqrt(Math.pow((scaleXX - shape.centerX), 2) + Math.pow((scaleXY - shape.centerY), 2));
-
         var changeInX = x - shape.centerX - centerToScaleXPoint * Math.cos(shape.angle);
+        var changeInY = changeInX * Math.tan(shape.angle);
+        if (shape.coordinates[2] - shape.coordinates[4] <= 0 && changeInX < 0) {} else {
+          shape.coordinates[2] += changeInX;
+          shape.coordinates[4] -= changeInX;
+          shape.coordinates[5] -= changeInY;
+          shape.coordinates[3] += changeInY;
+        }
+      } else if (mode == "scaleY") {
+        var scaleYX = (shape.coordinates[2] + shape.coordinates[4]) / 2;
+        var scaleYY = (shape.coordinates[3] + shape.coordinates[5]) / 2;
+        var centerToScaleYPoint = Math.sqrt(Math.pow((scaleYX - shape.centerX), 2) + Math.pow((scaleYY - shape.centerY), 2));
+        var changeInY = y - shape.centerY - centerToScaleYPoint * Math.cos(shape.angle);
+        var changeInX = changeInY * Math.tan(shape.angle);
+        //if height of triangle is less than 0 and scale is negative ie wants to reduce futher, do nothing.
+        if (((shape.coordinates[3] + shape.coordinates[5]) / 2) - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
+          shape.coordinates[0] += changeInX;
+          shape.coordinates[2] -= changeInX;
+          shape.coordinates[4] -= changeInX;
+          shape.coordinates[1] -= changeInY;
+          shape.coordinates[5] += changeInY;
+          shape.coordinates[3] += changeInY;
+        }
 
+      }
+      break;
+    case "line":
+      //since I'm scaling about a shapes's center a line cannot be scaled by it's y, only it's i.e it can be made longer not taller.
+      var centerToScaleXPoint = Math.sqrt(Math.pow((shape.coordinates[2] - shape.centerX), 2) + Math.pow((shape.coordinates[3] - shape.centerY), 2));
+      var changeInX = x - shape.centerX - (centerToScaleXPoint * Math.cos(shape.angle));
+      var changeInY = changeInX * Math.tan(shape.angle);
+      if (shape.coordinates[2] - shape.coordinates[0] <= 20 && changeInX < 0) {} else {
         shape.coordinates[2] += changeInX;
-        shape.coordinates[4] -= changeInX;
-
+        shape.coordinates[0] -= changeInX;
+        shape.coordinates[1] -= changeInY;
+        shape.coordinates[3] += changeInY;
+      }
+      break;
+    case "polyline":
+    case "polygon":
+      if (mode == "scaleX" && xChangeCanvas != 0) {
+        for (var i = 0; i < shape.coordinates.length; i += 2) {
+          shape.coordinates[i] *= scaleFactorX;
+        }
+      } else if (mode == "scaleY" && yChangeCanvas != 0) {
+        for (var i = 0; i < shape.coordinates.length; i += 2) {
+          shape.coordinates[i + 1] *= scaleFactorY;
+        }
       }
       break;
     default:
