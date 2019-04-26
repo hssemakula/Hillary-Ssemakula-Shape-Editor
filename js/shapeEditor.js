@@ -88,17 +88,17 @@ Shape.prototype.draw = function(context) {
 
 
   this.path = new Path2D(); //path object very important to check whether point lies in path.
+  context.beginPath(this.path);
   context.lineWidth = this.lineWidth;
   context.strokeStyle = this.lineColor;
   context.fillStyle = this.fillColor;
+  console.log(context.fillStyle);
   if (this.selected) {
     context.shadowColor = 'green';
     context.shadowBlur = 7;
   } else {
     context.shadowBlur = 0;
   }
-  context.beginPath(this.path);
-
 
 
   switch (String(this.type)) {
@@ -147,6 +147,8 @@ Shape.prototype.draw = function(context) {
 
   context.closePath(this.path);
   context.stroke(this.path);
+  context.fill(this.path); //very important for shape to be filled.
+
   this.drawRotaionAndMoveIcons(context);
 
 }
@@ -293,7 +295,6 @@ CanvasObject.prototype.draw =
     for (var i = 0; i < shapes.length; i++) {
       shapes[i].draw(this.context);
     }
-    this.context.fill();
   }
 
 /* To be used for poly translation */
