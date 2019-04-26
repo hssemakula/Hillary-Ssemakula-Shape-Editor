@@ -65,11 +65,11 @@ Shape.prototype.build = function() {
       break;
     case "curve":
       this.coordinates = [
-        this.centerX - 50, this.centerY + 25, // start point on first quardratic curve.
-        this.centerX - 25, this.centerY - 25, // control point on first quardratic curve
+        this.centerX - 50, this.centerY, // start point on first quardratic curve.
+        this.centerX - 25, this.centerY - 50, // control point on first quardratic curve
         this.centerX, this.centerY, //end point and start point: first/second curve.
-        this.centerX + 25, this.centerY + 25, // control point on second quardratic curve
-        this.centerX + 50, this.centerY - 25 // end point on second quardratic curve
+        this.centerX + 25, this.centerY + 50, // control point on second quardratic curve
+        this.centerX + 50, this.centerY // end point on second quardratic curve
       ];
       break;
     default:
@@ -213,8 +213,8 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
         scaleXIconY = this.coordinates[9];
 
         //scale y icon.
-        scaleYIconX = this.coordinates[0];
-        scaleYIconY = this.coordinates[1];
+        scaleYIconX = this.coordinates[6];
+        scaleYIconY = this.coordinates[7];
         break;
       case "rectangle":
       case "square":
@@ -373,7 +373,6 @@ $(function() {
 
       switch (mode) {
         case "rotate":
-          console.log(mode, shapes[selectedShape].coordinates);
           rotateShape(selectedShape, canvas1.context, x, y);
           break;
         case "scaleX":
@@ -721,12 +720,14 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       break;
     case "rectangle":
     case "square":
+      //use distance formula to find width and height.
+      var width = Math.sqrt(Math.pow((shape.coordinates[2] - shape.coordinates[0]), 2) + Math.pow((shape.coordinates[3] - shape.coordinates[1]), 2));
+      var height = Math.sqrt(Math.pow((shape.coordinates[6] - shape.coordinates[0]), 2) + Math.pow((shape.coordinates[7] - shape.coordinates[1]), 2));
       if (mode == "scaleX") {
-        var halfWidth = (Math.abs(shape.coordinates[0] - shape.coordinates[2])) / 2;
-        var changeInX = x - shape.centerX - (halfWidth * Math.cos(shape.angle));
+        var changeInX = x - shape.centerX - ((width / 2) * Math.cos(shape.angle));
         var changeInY = changeInX * Math.tan(shape.angle);
-        //if width is 0 or less and scale is negative, don't do anything
-        if (shape.coordinates[2] - shape.coordinates[0] <= 0 && changeInX < 0) {} else {
+        //if width is less than 2 do nothing.
+        if (width <= 2 && changeInX < 0) {} else {
           shape.coordinates[0] -= changeInX;
           shape.coordinates[2] += changeInX;
           shape.coordinates[4] += changeInX;
@@ -739,11 +740,10 @@ function scaleShape(shapeIndex, context, mode, x, y) {
           shape.coordinates[9] -= changeInY;
         }
       } else if (mode == "scaleY") {
-        var halfHeight = (Math.abs(shape.coordinates[1] - shape.coordinates[7])) / 2;
-        var changeInY = y - shape.centerY - (halfHeight * Math.cos(shape.angle));
+        var changeInY = y - shape.centerY - ((height / 2) * Math.cos(shape.angle));
         var changeInX = changeInY * Math.tan(shape.angle);
-        //if height is 0 or less and scale is negative, don't do anything
-        if (shape.coordinates[7] - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
+        //if height is 2 or less and scale is negative, don't do anything
+        if (height <= 2 && changeInY < 0) {} else {
           shape.coordinates[0] += changeInX;
           shape.coordinates[2] += changeInX;
           shape.coordinates[4] -= changeInX;
@@ -777,6 +777,7 @@ function scaleShape(shapeIndex, context, mode, x, y) {
         var centerToScaleYPoint = Math.sqrt(Math.pow((scaleYX - shape.centerX), 2) + Math.pow((scaleYY - shape.centerY), 2));
         var changeInY = y - shape.centerY - centerToScaleYPoint * Math.cos(shape.angle);
         var changeInX = changeInY * Math.tan(shape.angle);
+        console.log(changeInY);
         //if height of triangle is less than 0 and scale is negative ie wants to reduce futher, do nothing.
         if (((shape.coordinates[3] + shape.coordinates[5]) / 2) - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
           shape.coordinates[0] += changeInX;
@@ -799,6 +800,41 @@ function scaleShape(shapeIndex, context, mode, x, y) {
         shape.coordinates[0] -= changeInX;
         shape.coordinates[1] -= changeInY;
         shape.coordinates[3] += changeInY;
+      }
+      break;
+    case "curve":
+      //same for pth x and y
+      if (mode == "scaleX") {
+        var centerToXScalePoint = Math.sqrt(Math.pow((shape.coordinates[8] - shape.centerX), 2) + Math.pow((shape.coordinates[9] - shape.centerY), 2));
+        var changeInX = x - shape.centerX - (centerToXScalePoint * Math.cos(shape.angle));
+        var changeInY = changeInX * Math.tan(shape.angle);
+        //  if (shape.coordinates[8] - shape.coordinates[4] <= 20 && changeInX < 0) {} else {
+        shape.coordinates[8] += changeInX;
+        shape.coordinates[6] += changeInX;
+        shape.coordinates[0] -= changeInX;
+        shape.coordinates[2] -= changeInX;
+        shape.coordinates[9] += changeInY;
+        shape.coordinates[7] += changeInY;
+        shape.coordinates[3] -= changeInY;
+        shape.coordinates[1] -= changeInY;
+        //  }
+      } else if (mode == "scaleY") {
+        var centerToYScalePoint = Math.sqrt(Math.pow((shape.coordinates[6] - shape.centerX), 2) + Math.pow((shape.coordinates[7] - shape.centerY), 2));
+        var changeInY = y - shape.centerY - centerToYScalePoint * Math.cos(shape.angle);
+        var changeInX = changeInY * Math.tan(shape.angle);
+        console.log(changeInY);
+        //if height of triangle is less than 0 and scale is negative ie wants to reduce futher, do nothing.
+        //    if (((shape.coordinates[3] + shape.coordinates[5]) / 2) - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
+        shape.coordinates[8] += changeInX;
+        shape.coordinates[6] -= changeInX;
+        shape.coordinates[0] -= changeInX;
+        shape.coordinates[2] += changeInX;
+        shape.coordinates[9] -= changeInY;
+        shape.coordinates[7] += changeInY;
+        shape.coordinates[3] -= changeInY;
+        shape.coordinates[1] += changeInY;
+
+        //  }
       }
       break;
     case "polyline":
