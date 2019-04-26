@@ -871,38 +871,39 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       }
       break;
     case "curve":
-      var length = Math.sqrt(Math.pow((shape.coordinates[4] - shape.coordinates[2]), 2) + Math.pow((shape.coordinates[5] - shape.coordinates[3]), 2));
-      var height = Math.sqrt(Math.pow((shape.coordinates[4] - shape.coordinates[2]), 2) + Math.pow((shape.coordinates[5] - shape.coordinates[3]), 2));
+      var length = Math.sqrt(Math.pow((shape.coordinates[8] - shape.coordinates[0]), 2) + Math.pow((shape.coordinates[9] - shape.coordinates[1]), 2));
+      var highPointDifference = Math.sqrt(Math.pow((shape.coordinates[6] - shape.coordinates[2]), 2) + Math.pow((shape.coordinates[3] - shape.coordinates[7]), 2));
       if (mode == "scaleX") {
         var centerToXScalePoint = Math.sqrt(Math.pow((shape.coordinates[8] - shape.centerX), 2) + Math.pow((shape.coordinates[9] - shape.centerY), 2));
         var changeInX = x - shape.centerX - (centerToXScalePoint * Math.cos(shape.angle));
         var changeInY = changeInX * Math.tan(shape.angle);
-        //  if (shape.coordinates[8] - shape.coordinates[4] <= 20 && changeInX < 0) {} else {
-        shape.coordinates[8] += changeInX;
-        shape.coordinates[6] += changeInX;
-        shape.coordinates[0] -= changeInX;
-        shape.coordinates[2] -= changeInX;
-        shape.coordinates[9] += changeInY;
-        shape.coordinates[7] += changeInY;
-        shape.coordinates[3] -= changeInY;
-        shape.coordinates[1] -= changeInY;
-        //  }
+        if (length <= 20 && (isIconOnRight && (changeInX < 0))) {} else if (length <= 2 && (isIconOnLeft && (changeInX > 0))) {} else {
+          shape.coordinates[8] += changeInX;
+          shape.coordinates[6] += changeInX;
+          shape.coordinates[0] -= changeInX;
+          shape.coordinates[2] -= changeInX;
+          shape.coordinates[9] += changeInY;
+          shape.coordinates[7] += changeInY;
+          shape.coordinates[3] -= changeInY;
+          shape.coordinates[1] -= changeInY;
+        }
       } else if (mode == "scaleY") {
+
         var centerToYScalePoint = Math.sqrt(Math.pow((shape.coordinates[6] - shape.centerX), 2) + Math.pow((shape.coordinates[7] - shape.centerY), 2));
         var changeInY = y - shape.centerY - centerToYScalePoint * Math.cos(shape.angle);
         var changeInX = changeInY * Math.tan(shape.angle);
-        //if height of triangle is less than 0 and scale is negative ie wants to reduce futher, do nothing.
-        //    if (((shape.coordinates[3] + shape.coordinates[5]) / 2) - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
-        shape.coordinates[8] += changeInX;
-        shape.coordinates[6] -= changeInX;
-        shape.coordinates[0] -= changeInX;
-        shape.coordinates[2] += changeInX;
-        shape.coordinates[9] -= changeInY;
-        shape.coordinates[7] += changeInY;
-        shape.coordinates[3] -= changeInY;
-        shape.coordinates[1] += changeInY;
+        console.log(highPointDifference);
+        if (highPointDifference <= 60 && (isIconOnRight && (changeInY < 0))) {} else if (height <= 2 && (isIconOnLeft && (changeInY > 0))) {} else {
+          shape.coordinates[8] += changeInX;
+          shape.coordinates[6] -= changeInX;
+          shape.coordinates[0] -= changeInX;
+          shape.coordinates[2] += changeInX;
+          shape.coordinates[9] -= changeInY;
+          shape.coordinates[7] += changeInY;
+          shape.coordinates[3] -= changeInY;
+          shape.coordinates[1] += changeInY;
 
-        //  }
+        }
       }
       break;
     case "polyline":
