@@ -1,5 +1,6 @@
 #wrapper {
   height: 100vh;
+  min-width: 1280px;
 }
 
 #canvas {
@@ -12,4 +13,19 @@
 .shapeHover {
   background-color: rgba(255, 255, 255, 0);
   border: 1px dashed #85C1E9;
+}
+
+#lineColorDiv {
+  background-color: #2E86C1;
+}
+
+#fillColorDiv {
+  background-color: white;
+}
+
+#customizationMenu {
+  border: 1px solid white;
+  padding-top: 20px;
+  padding-left: 40px;
+  padding-right: 40px;
 }

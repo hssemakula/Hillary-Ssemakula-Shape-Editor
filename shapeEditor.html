@@ -28,9 +28,9 @@
   <div id="wrapper" class="container-fluid bg-dark m-0 p-0">
 
     <div class="container-fluid bg-light col-lg-12">
-      <center>
-        <h3 class="pt-2 pb-3"> Hillary Ssemakula Shape Editor</h3>
-      </center>
+
+      <h3 class="pt-2 pb-3"> Hillary Ssemakula Shape Editor</h3>
+
     </div>
 
 
@@ -38,7 +38,7 @@
     <div class="row m-0 pb-5 pr-0 pl-0 pt-0 bg-dark">
 
       <!-- SHAPE MENU DIV---------------------------------------------------------------->
-      <div id="shapeMenu" class=" col-md-2 mt-5 mr-5 ml-2">
+      <div id="shapeMenu" class=" col-md-2 mt-5 ml-2">
 
 
         <!--Heading -->
@@ -151,67 +151,73 @@
       <!---------------------------- END shape menu --------------------------------------------------------------->
 
       <!--- CANVAS --->
-      <div class="col-md-7">
+      <div class="col-md-6">
         <center>
-          <canvas id="canvas" width="700" height="500" style="width:700px; height:500px; margin-top:50px"></canvas>
+          <canvas id="canvas" width="600" height="400" style="width:600px; height:400px; margin-top:50px"></canvas>
         </center>
       </div>
 
-      <div class="col-md-2 mt-5">
+      <!-- customization menu -->
+      <div id="customizationMenu" class="col-md-3 mt-5">
         <!---- LIne color --->
-        <div class="row">
-          <p class="text-white"> Line Color: </p>
-          <div style="width:50px; height:50px;">
+        <div class="row mb-3">
+          <h6 class="text-white mr-2  mt-1"> Line Color: </h6>
+
+          <select id="lineColorSelect" class="btn btn-light btn-sm colorOptions" onchange="changeOption(id, value)">
+            <option value="#2E86C1">Blue</option>
+            <option value="black">Black</option>
+            <option value="yellow">Yellow</option>
+            <option value="red">Red</option>
+            <option value="orange">Orange</option>
+            <option value="green">Green</option>
+          </select>
+          <div id="lineColorDiv" style="width:30px; height:30px;" class="ml-2">
           </div>
 
-          <select id="lineColorSelect" class="" onchange="">
-            <option value="Translate">Blue</option>
-            <option value="Scale">Black</option>
-            <option value="Rotate">Yellow</option>
-            <option value="Rotate">Red</option>
-            <option value="Rotate">Orange</option>
-            <option value="Rotate">Green</option>
-          </select>
         </div>
 
         <!--- Fill color -->
-        <div class="row">
-          <p class="text-white"> Fill Color: </p>
-          <div style="width:50px; height:50px;">
-          </div>
+        <div class="row  mb-3">
+          <h6 class="text-white mr-2  mt-1"> Fill Color: </h6>
 
-          <select id="lineColorSelect" class="" onchange="">
-            <option value="Translate">Blue</option>
-            <option value="Scale">Black</option>
-            <option value="Rotate">Yellow</option>
-            <option value="Rotate">Red</option>
-            <option value="Rotate">Orange</option>
-            <option value="Rotate">Green</option>
+          <select id="fillColorSelect" class="btn btn-light btn-sm ml-2 colorOptions" onchange="changeOption(id, value)">
+            <option value="white">white</option>
+            <option value="#2E86C1">Blue</option>
+            <option value="black">Black</option>
+            <option value="yellow">Yellow</option>
+            <option value="red">Red</option>
+            <option value="orange">Orange</option>
+            <option value="green">Green</option>
+          </select>
+          <div id="fillColorDiv" style="width:30px; height:30px;" class="ml-2">
+          </div>
+        </div>
+
+        <!-- Line width -->
+        <div class="row mb-3">
+          <h6 class="text-white mr-2 mt-1"> Line Width: </h6>
+
+          <select id="lineWidthSelect" class="btn btn-light btn-sm colorOptions" onchange="changeOption(id, value)">
+            <option value="0">1</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="7">7</option>
+            <option value="9">9</option>
+            <option value="11">11</option>
           </select>
         </div>
 
+        <!--- CLEAR and DELETE buttons -->
         <div class="row">
-          <p class="text-white"> Line Width: </p>
-
-          <select id="lineColorSelect" class="" onchange="">
-            <option value="Translate">Blue</option>
-            <option value="Scale">Black</option>
-            <option value="Rotate">Yellow</option>
-            <option value="Rotate">Red</option>
-            <option value="Rotate">Orange</option>
-            <option value="Rotate">Green</option>
-          </select>
+          <button type="button" class=" btn  btn-danger btn-block" id="clear"> X </button>
+          <button type="button" class=" btn btn-outline-light btn-block" id="clear"> CLEAR </button>
         </div>
 
-        <div class="row">
-            <button type="button" class=" btn " id="clear"> CLEAR </button>
-              <button type="button" class=" btn  btn-danger" id="clear"> X </button>
-          </div>
-
-          <div class="row">
-              <button type="button" class=" btn " id="clear"> SAVE </button>
-                <button type="button" class=" btn  " id="clear"> LOAD </button>
-            </div>
+        <!--- SAVE and LOAD buttons -->
+        <div class="row-fluid w-100 mr-0" style=" margin-top:100px">
+          <button type="button" class=" btn btn-light btn-sm col-md-4 float-left" id="save"> <b> SAVE </b> </button>
+          <button type="button" class=" btn  btn-light btn-sm ml-5 col-md-4 float-right" id="load"><b> LOAD </b></button>
+        </div>
 
       </div>
 

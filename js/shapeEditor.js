@@ -26,19 +26,22 @@ function Shape(type, x, y) {
   this.type = type; //string type of shape
   this.coordinates = []; //array of coordinates.
   this.selected = false;
-  this.thickness = 3; //thickness of line
-  this.lineColor = "#2E86C1";
-  this.fillColor = "";
   this.rotationIconPath; //rotation icon
   this.scaleXIconPath; //scaleX icon paths
   this.scaleYIconPath; //scaleY icon
   this.centerX = x; //coorinates for center of shape, poly's don't use this
   this.centerY = y;
   this.angle = 0; //angle of rotation at which shape is currently rotated.
+  this.lineWidth;
+  this.fillColor;
+  this.lineColor;
 }
 
 //build shape using given center point
 Shape.prototype.build = function() {
+
+  initializeColors(this);
+
   //using shape type define coordinates.
   switch (this.type) {
     case "line":
@@ -78,9 +81,16 @@ Shape.prototype.build = function() {
 
 //Draw function for shape object.
 Shape.prototype.draw = function(context) {
+  //SHOULD BE FIRST: if shape has not been built yet and is not polygon or polyline, if not first colors dont render.
+  if ((this.coordinates.length <= 0) && (this.type != "polygon") && (this.type != "polyline")) {
+    this.build();
+  }
+
+
   this.path = new Path2D(); //path object very important to check whether point lies in path.
-  context.lineWidth = this.thickness;
+  context.lineWidth = this.lineWidth;
   context.strokeStyle = this.lineColor;
+  context.fillStyle = this.fillColor;
   if (this.selected) {
     context.shadowColor = 'green';
     context.shadowBlur = 7;
@@ -89,11 +99,7 @@ Shape.prototype.draw = function(context) {
   }
   context.beginPath(this.path);
 
-  //if shape has not been built yet and is not polygon or polyline.
-  if ((this.coordinates.length <= 0) && (this.type != "polygon") && (this.type != "polyline")) {
 
-    this.build();
-  }
 
   switch (String(this.type)) {
     case "line":
@@ -138,6 +144,7 @@ Shape.prototype.draw = function(context) {
       break;
     default:
   }
+
   context.closePath(this.path);
   context.stroke(this.path);
   this.drawRotaionAndMoveIcons(context);
@@ -269,6 +276,7 @@ Shape.prototype.drawRotaionAndMoveIcons = function(context) {
     context.closePath(this.scaleYIconPath);
     context.stroke(this.scaleYIconPath);
   }
+
 }
 
 
@@ -283,8 +291,10 @@ CanvasObject.prototype.draw =
   function() {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     for (var i = 0; i < shapes.length; i++) {
+      console.log(shapes[i]);
       shapes[i].draw(this.context);
     }
+    this.context.fill();
   }
 
 /* To be used for poly translation */
@@ -325,6 +335,14 @@ $(function() {
 
     //this is function is also used to draw polys, so draw shouldn't be called here if we're making poly
     if (polyType == "" && mode == "") {
+      canvas1.draw();
+    }
+  });
+
+//if color is selected in dropdown while shape is selected
+  $(".colorOptions").change(function() {
+    if (selectedShape != -100) {
+      initializeColors(shapes[selectedShape]);
       canvas1.draw();
     }
   });
@@ -580,6 +598,24 @@ function initPoly(coordinates) {
 
     }
   }
+}
+
+//set colors of the shape.
+function initializeColors(shape) {
+  //set line color to selected line color
+  var lineColorOption = document.getElementById("lineColorSelect");
+  var lineColor = lineColorOption.options[lineColorOption.selectedIndex].value;
+  shape.lineColor = String(lineColor);
+
+  //lineWidth
+  var lineWidthOption = document.getElementById("lineWidthSelect");
+  var lineWidth = lineWidthOption.options[lineWidthOption.selectedIndex].value;
+  shape.lineWidth = Number(lineWidth) + 3;
+
+  //fill Color
+  var fillColorOption = document.getElementById("fillColorSelect");
+  var fillColor = fillColorOption.options[fillColorOption.selectedIndex].value;
+  shape.fillColor = String(fillColor);
 }
 
 
@@ -855,9 +891,26 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       }
       break;
     default:
-
   }
   canvas1.draw();
+}
+
+function changeOption(id, value) {
+  switch (String(id)) {
+    case "lineColorSelect":
+      lineColor = String(value);
+      document.getElementById("lineColorDiv").style.backgroundColor = lineColor;
+      break;
+    case "fillColorSelect":
+      fillColor = String(value);
+      document.getElementById("fillColorDiv").style.backgroundColor = fillColor;
+      break;
+    case "lineWidthSelect":
+      lineWidth = 3 + Number(value);
+      break;
+    default:
+
+  }
 }
 
 /* This function iterates through all html elements with the class shapeButton and innitializes them as draggable */
