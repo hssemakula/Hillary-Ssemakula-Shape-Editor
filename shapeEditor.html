@@ -218,7 +218,9 @@
         <!--- SAVE and LOAD buttons -->
         <div class="row-fluid w-100 mr-0" style=" margin-top:100px">
           <button type="button" class=" btn btn-light btn-sm col-md-4 float-left" id="save"> <b> SAVE </b> </button>
-          <button type="button" class=" btn  btn-light btn-sm ml-5 col-md-4 float-right" id="load"><b> LOAD </b></button>
+          <!-- The for attribute connects this button to input, hence the ungly choose file text is not shown. -->
+          <label for="load" type="button" class=" btn  btn-light btn-sm ml-5 col-md-4 float-right"><b> LOAD </b></label>
+          <input type="file" id="load" accept=".json" style="visibility:hidden;">
         </div>
 
       </div>
