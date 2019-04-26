@@ -291,7 +291,6 @@ CanvasObject.prototype.draw =
   function() {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     for (var i = 0; i < shapes.length; i++) {
-      console.log(shapes[i]);
       shapes[i].draw(this.context);
     }
     this.context.fill();
@@ -339,7 +338,7 @@ $(function() {
     }
   });
 
-//if color is selected in dropdown while shape is selected
+  //if color is selected in dropdown while shape is selected
   $(".colorOptions").change(function() {
     if (selectedShape != -100) {
       initializeColors(shapes[selectedShape]);
@@ -495,6 +494,31 @@ $(function() {
     }
   });
 
+  //when x button is clicked, if shape selected, delete it.
+  $("#delete").click(function() {
+    var button = $(this);
+
+    if (button.hasClass("disabled") == false) {
+      if (selectedShape != -100) {
+        shapes.splice(selectedShape, 1);
+        canvas1.draw();
+        button.addClass("disabled");
+        selectedShape = -100; //reset selection flag
+      }
+    }
+
+  });
+
+  //remove all shapes on canvas.
+  $("#clear").click(function() {
+
+    shapes = [];
+    selectedShape = -100;
+    canvas1.draw();
+    console.log(shapes);
+
+  });
+
 
 });
 
@@ -560,6 +584,7 @@ function makeSelection(coordinates) {
         }
         selectedShape = i;
         shapes[selectedShape].selected = true;
+        document.getElementById("delete").classList.remove("disabled");
         return;
       }
     }
@@ -572,6 +597,7 @@ function makeSelection(coordinates) {
     shapes[selectedShape].selected = false;
     selectedShape = -100
   }
+  document.getElementById("delete").classList.add("disabled"); //if code gets here shape wasn't selected, disable delete button.
 }
 
 
@@ -584,6 +610,7 @@ function initPoly(coordinates) {
       //add -1000,-1000 at end because mousemove changes those values for rubberbanding.
       //-1000 is a place holder for next click coordinates.
       var newShape = new Shape(polyType, 0, 0); //create new shape.
+      initializeColors(newShape);
       newShape.coordinates = [coordinates[0], coordinates[1], -1000, -1000]; //add clicked coordinate and shapeholder coordinates
       shapes.push(newShape); //add it to shapes.
       startPolyDraw = false; //turn poly initialization off until next time poly button is clicked
