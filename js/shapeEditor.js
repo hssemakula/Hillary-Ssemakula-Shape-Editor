@@ -711,6 +711,8 @@ function scaleShape(shapeIndex, context, mode, x, y) {
   } else {
     scaleFactorY = 1.005 + (yChangeCanvas / 1000);
   }
+  var isIconOnRight = (shape.angle <= Math.PI / 2) || (((3 * Math.PI / 2) <= shape.angle) && (shape.angle <= (2 * Math.PI)));
+  var isIconOnLeft = (shape.angle > Math.PI / 2) && (shape.angle < (3 * Math.PI / 2));
 
   switch (shape.type) {
     case "circle":
@@ -726,8 +728,9 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       if (mode == "scaleX") {
         var changeInX = x - shape.centerX - ((width / 2) * Math.cos(shape.angle));
         var changeInY = changeInX * Math.tan(shape.angle);
-        //if width is less than 2 do nothing.
-        if (width <= 2 && changeInX < 0) {} else {
+
+        //if width is 2 or less and shape is facing a certain way refuse to scale it any further
+        if (width <= 2 && (isIconOnRight && (changeInX < 0))) {} else if (width <= 2 && (isIconOnLeft && (changeInX > 0))) {} else {
           shape.coordinates[0] -= changeInX;
           shape.coordinates[2] += changeInX;
           shape.coordinates[4] += changeInX;
@@ -743,7 +746,7 @@ function scaleShape(shapeIndex, context, mode, x, y) {
         var changeInY = y - shape.centerY - ((height / 2) * Math.cos(shape.angle));
         var changeInX = changeInY * Math.tan(shape.angle);
         //if height is 2 or less and scale is negative, don't do anything
-        if (height <= 2 && changeInY < 0) {} else {
+        if (height <= 2 && (isIconOnRight && (changeInY < 0))) {} else if (height <= 2 && (isIconOnLeft && (changeInY > 0))) {} else {
           shape.coordinates[0] += changeInX;
           shape.coordinates[2] += changeInX;
           shape.coordinates[4] -= changeInX;
@@ -759,13 +762,14 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       }
       break;
     case "triangle":
+      var base = Math.sqrt(Math.pow((shape.coordinates[4] - shape.coordinates[2]), 2) + Math.pow((shape.coordinates[5] - shape.coordinates[3]), 2));
       if (mode == "scaleX") {
         var scaleXX = (shape.coordinates[0] + shape.coordinates[2]) / 2;
         var scaleXY = (shape.coordinates[1] + shape.coordinates[3]) / 2;
         var centerToScaleXPoint = Math.sqrt(Math.pow((scaleXX - shape.centerX), 2) + Math.pow((scaleXY - shape.centerY), 2));
         var changeInX = x - shape.centerX - centerToScaleXPoint * Math.cos(shape.angle);
         var changeInY = changeInX * Math.tan(shape.angle);
-        if (shape.coordinates[2] - shape.coordinates[4] <= 0 && changeInX < 0) {} else {
+        if (base <= 2 && (isIconOnRight && (changeInX < 0))) {} else if (base <= 2 && (isIconOnLeft && (changeInX > 0))) {} else {
           shape.coordinates[2] += changeInX;
           shape.coordinates[4] -= changeInX;
           shape.coordinates[5] -= changeInY;
@@ -774,12 +778,12 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       } else if (mode == "scaleY") {
         var scaleYX = (shape.coordinates[2] + shape.coordinates[4]) / 2;
         var scaleYY = (shape.coordinates[3] + shape.coordinates[5]) / 2;
+        var height = Math.sqrt(Math.pow((shape.coordinates[0] - scaleYX), 2) + Math.pow((shape.coordinates[1] - scaleYY), 2));
         var centerToScaleYPoint = Math.sqrt(Math.pow((scaleYX - shape.centerX), 2) + Math.pow((scaleYY - shape.centerY), 2));
         var changeInY = y - shape.centerY - centerToScaleYPoint * Math.cos(shape.angle);
         var changeInX = changeInY * Math.tan(shape.angle);
-        console.log(changeInY);
         //if height of triangle is less than 0 and scale is negative ie wants to reduce futher, do nothing.
-        if (((shape.coordinates[3] + shape.coordinates[5]) / 2) - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
+        if (height <= 2 && (isIconOnRight && (changeInY < 0))) {} else if (height <= 2 && (isIconOnLeft && (changeInY > 0))) {} else {
           shape.coordinates[0] += changeInX;
           shape.coordinates[2] -= changeInX;
           shape.coordinates[4] -= changeInX;
@@ -792,10 +796,11 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       break;
     case "line":
       //since I'm scaling about a shapes's center a line cannot be scaled by it's y, only it's i.e it can be made longer not taller.
+      var length = Math.sqrt(Math.pow((shape.coordinates[0] - shape.coordinates[2]), 2) + Math.pow((shape.coordinates[1] - shape.coordinates[3]), 2));
       var centerToScaleXPoint = Math.sqrt(Math.pow((shape.coordinates[2] - shape.centerX), 2) + Math.pow((shape.coordinates[3] - shape.centerY), 2));
       var changeInX = x - shape.centerX - (centerToScaleXPoint * Math.cos(shape.angle));
       var changeInY = changeInX * Math.tan(shape.angle);
-      if (shape.coordinates[2] - shape.coordinates[0] <= 20 && changeInX < 0) {} else {
+      if (length <= 20 && (isIconOnRight && (changeInX < 0))) {} else if (length <= 2 && (isIconOnLeft && (changeInX > 0))) {} else {
         shape.coordinates[2] += changeInX;
         shape.coordinates[0] -= changeInX;
         shape.coordinates[1] -= changeInY;
@@ -803,7 +808,8 @@ function scaleShape(shapeIndex, context, mode, x, y) {
       }
       break;
     case "curve":
-      //same for pth x and y
+      var length = Math.sqrt(Math.pow((shape.coordinates[4] - shape.coordinates[2]), 2) + Math.pow((shape.coordinates[5] - shape.coordinates[3]), 2));
+      var height = Math.sqrt(Math.pow((shape.coordinates[4] - shape.coordinates[2]), 2) + Math.pow((shape.coordinates[5] - shape.coordinates[3]), 2));
       if (mode == "scaleX") {
         var centerToXScalePoint = Math.sqrt(Math.pow((shape.coordinates[8] - shape.centerX), 2) + Math.pow((shape.coordinates[9] - shape.centerY), 2));
         var changeInX = x - shape.centerX - (centerToXScalePoint * Math.cos(shape.angle));
@@ -822,7 +828,6 @@ function scaleShape(shapeIndex, context, mode, x, y) {
         var centerToYScalePoint = Math.sqrt(Math.pow((shape.coordinates[6] - shape.centerX), 2) + Math.pow((shape.coordinates[7] - shape.centerY), 2));
         var changeInY = y - shape.centerY - centerToYScalePoint * Math.cos(shape.angle);
         var changeInX = changeInY * Math.tan(shape.angle);
-        console.log(changeInY);
         //if height of triangle is less than 0 and scale is negative ie wants to reduce futher, do nothing.
         //    if (((shape.coordinates[3] + shape.coordinates[5]) / 2) - shape.coordinates[1] <= 0 && changeInY < 0) {} else {
         shape.coordinates[8] += changeInX;
