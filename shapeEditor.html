@@ -12,9 +12,12 @@
   <meta name="description" content="Canvas with rubber band selection box.">
   <meta name="keywords" content="canvas, rubber band, selection, save, screen, restore, HTML5">
   <title> Hillary Ssemakula Shape Editor </title>
-  <!-- Styled with bootstrap -->
+  <!-- Styled with bootstrap and jquery-->
   <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="./css/styles.css">
+  <link rel="stylesheet" type="text/css" href="./css/jquery-ui.structure.min.css">
+  <link rel="stylesheet" type="text/css" href="./css/jquery-ui.theme.min.css">
+  <!--  <link rel="stylesheet" type="text/css" href="./css/jquery-ui.min.css"> -->
 
   <!-- additional functionality Jquery -->
   <script src="./js/jquery-3.3.1.min.js"></script>
@@ -181,8 +184,8 @@
           <h6 class="text-white mr-2  mt-1"> Fill Color: </h6>
 
           <select id="fillColorSelect" class="btn btn-light btn-sm ml-2 colorOptions" onchange="changeOption(id, value)">
-            <option value="white">white</option>
             <option value="#2E86C1">Blue</option>
+            <option value="white">white</option>
             <option value="black">Black</option>
             <option value="yellow">Yellow</option>
             <option value="red">Red</option>
@@ -208,7 +211,7 @@
         </div>
 
         <!--- CLEAR and DELETE buttons -->
-        <div class="row">
+        <div class="row" style=" margin-top:50px">
           <button type="button" class=" btn  btn-danger btn-block disabled" id="delete">
             <b> X </b>
           </button>
@@ -216,7 +219,7 @@
         </div>
 
         <!--- SAVE and LOAD buttons -->
-        <div class="row-fluid w-100 mr-0" style=" margin-top:100px">
+        <div class="row-fluid w-100 mr-0" style=" margin-top:60px">
           <button type="button" class=" btn btn-light btn-sm col-md-4 float-left" id="save"> <b> SAVE </b> </button>
           <!-- The for attribute connects this button to input, hence the ungly choose file text is not shown. -->
           <label for="load" type="button" class=" btn  btn-light btn-sm ml-5 col-md-4 float-right"><b> LOAD </b></label>
@@ -227,6 +230,16 @@
 
     </div>
 
+    <div id="load-dialog" class="bg-white">
+      <!-- The main content shown is the content in this paragraph -->
+      <p class="text-muted"> Would you like to save your current canvas first? </p>
+      <!-- a row div is also provided to hold two buttons. one is the button to close the dialog and the
+    other is the give up bottom, to reset the game when needed -->
+      <div class="row">
+        <button type="button" class="btn btn-dark text-white mx-auto mt-2" id="yes"> YES </button>
+        <button type="button" class="btn btn-danger text-white mx-auto mt-2" id="no"> NO </button>
+      </div>
+    </div>
     <script src="./js/shapeEditor.js"></script>
 
   </div>

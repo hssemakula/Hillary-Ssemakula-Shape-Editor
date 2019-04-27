@@ -15,12 +15,8 @@
   border: 1px dashed #85C1E9;
 }
 
-#lineColorDiv {
+#lineColorDiv, #fillColorDiv {
   background-color: #2E86C1;
-}
-
-#fillColorDiv {
-  background-color: white;
 }
 
 #customizationMenu {

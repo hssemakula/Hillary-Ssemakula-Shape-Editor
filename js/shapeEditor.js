@@ -12,6 +12,7 @@ var selectedShape = -100; //index to note selected shape.
 var xChangeCanvas = 0; //tracks changes in mouse x and y canvas wide.
 var yChangeCanvas = 0;
 var mode = ""; //tracks whether we are rotating or scaling.
+var fileOpenEvent; //used to store the file opening event.
 
 
 function getMouseCoordinates(event) {
@@ -92,7 +93,6 @@ Shape.prototype.draw = function(context) {
   context.lineWidth = this.lineWidth;
   context.strokeStyle = this.lineColor;
   context.fillStyle = this.fillColor;
-  console.log(context.fillStyle);
   if (this.selected) {
     context.shadowColor = 'green';
     context.shadowBlur = 7;
@@ -147,7 +147,11 @@ Shape.prototype.draw = function(context) {
 
   context.closePath(this.path);
   context.stroke(this.path);
-  context.fill(this.path); //very important for shape to be filled.
+
+  //lines, curves and polylines don't have fills.
+  if (this.type != "line" && this.type != "curve" && this.type != "polyline")
+    //very important for shape to be filled.
+    context.fill(this.path);
 
   this.drawRotaionAndMoveIcons(context);
 
@@ -495,6 +499,7 @@ $(function() {
     }
   });
 
+  //------------DELETE SHAPE------------------------
   //when x button is clicked, if shape selected, delete it.
   $("#delete").click(function() {
     var button = $(this);
@@ -510,18 +515,131 @@ $(function() {
 
   });
 
+  //--------------------------CLEAR BUTTON------------------------
   //remove all shapes on canvas.
   $("#clear").click(function() {
-
     shapes = [];
     selectedShape = -100;
     canvas1.draw();
-    console.log(shapes);
-
   });
 
+  //----------------------------SAVE FILE---------------------
+  $("#save").click(function() {
+    if (selectedShape != -100) {
+      shapes[selectedShape].selected = false;
+      selectedShape = -100;
+    }
+    saveFile();
+  });
+
+  $("#load-dialog").dialog({
+    autoOpen: false,
+    modal: true,
+    width: 350,
+    show: "blind",
+    hide: "blind",
+  });
+  $(".ui-dialog-titlebar").hide();
+
+  //when yes button is clicked save canvas, close dialog.
+  $("#yes").click(function() {
+    $("#save").click();
+    $("#clear").click(); //clear canvas.
+    $("#load-dialog").dialog("close");
+    readFile(fileOpenEvent);
+  });
+
+  //when no button is clickedclose dialog.
+  $("#no").click(function() {
+    $("#load-dialog").dialog("close");
+    $("#clear").click(); //clear canvas.
+    readFile(fileOpenEvent);
+  });
+
+  $('#load').change(function(event) {
+    fileOpenEvent = event;
+    if (shapes.length > 0) $("#load-dialog").dialog("open"); //show option to save
+    else readFile(event);
+  });
 
 });
+
+//-----------------------------LOAD FILE------------------
+
+function readFile(event) {
+  var f = event.target.files[0];
+  if (f) {
+    var r = new FileReader();
+    r.onload = function(e) {
+      var contents = e.target.result; //get contents
+      var arr = JSON.parse(contents); //convert them into a javascript object.
+
+      //--------------------------------------------------------------
+      //At this point, covert objects in array into shapes
+      for (var i = 0; i <= arr.length; i++) {
+        var obj = arr[i];
+
+        var newShape = new Shape(String(obj.type), Number(obj.centerX), Number(obj.centerY));
+        newShape.coordinates = obj.coordinates;
+        newShape.angle = Number(obj.angle);
+        newShape.fillColor = String(obj.fillColor);
+        newShape.lineColor = String(obj.lineColor);
+        newShape.lineWidth = String(obj.lineWidth);
+        newShape.selected = false;
+
+        //add to shapes.
+        shapes.push(newShape);
+        canvas1.draw();
+      }
+
+      //-----------------------------------------------------
+    }
+    r.readAsText(f);
+  } else {
+    alert("Failed to load file");
+  }
+  var reader = new FileReader();
+
+  reader.onload = function(e) {
+    var dataURL = reader.result;
+  }
+  reader.readAsDataURL(f);
+}
+
+
+
+
+//stringfies the shapes array and saves the file
+function saveFile() {
+  var jsonString = shapesToJSON();
+  var element = document.createElement('a'); //create anchor tag.
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jsonString)); //point anchor tag to json object.
+  element.setAttribute('download', "myCanvasSave.json"); //make click on anchor tag downloadable.
+  element.style.display = 'none'; //don't display link.
+  document.body.appendChild(element); //add link to body
+  element.click(); //simulate user click which starts downlaod.
+  document.body.removeChild(element); //remove anchor tag.
+}
+
+function shapesToJSON() {
+  var jsonString = "[";
+  for (var i = 0; i < shapes.length; i++) {
+    jsonString += "{"
+    jsonString += "\"type\": \"" + shapes[i].type + "\",";
+    jsonString += "\"angle\": " + shapes[i].angle + ",";
+    jsonString += "\"centerX\":" + shapes[i].centerX + ",";
+    jsonString += "\"centerY\":" + shapes[i].centerY + ",";
+    jsonString += "\"coordinates\": [" + shapes[i].coordinates + "],";
+    jsonString += "\"fillColor\": \"" + shapes[i].fillColor + "\",";
+    jsonString += "\"lineColor\": \"" + shapes[i].lineColor + "\",";
+    jsonString += "\"lineWidth\": " + shapes[i].lineWidth + ",";
+    jsonString += "\"selected\": " + false;
+    if (i == shapes.length - 1) jsonString += "}";
+    else jsonString += "}, ";
+  }
+  jsonString += "]";
+  return jsonString;
+}
 
 //TranslateShape: add change in x and y to every point.
 function translateShape(shapeIndex, dx, dy) {
@@ -591,14 +709,16 @@ function makeSelection(coordinates) {
     }
     if (selectedShape != -100) {
       shapes[selectedShape].selected = false;
-      selectedShape = -100
+      selectedShape = -100;
+      document.getElementById("delete").classList.add("disabled");
     }
   } //if polytype is being drawn no shape should be selected.
   else if (polyType != "" && selectedShape != -100) {
+    document.getElementById("delete").classList.add("disabled");
     shapes[selectedShape].selected = false;
-    selectedShape = -100
+    selectedShape = -100;
   }
-  document.getElementById("delete").classList.add("disabled"); //if code gets here shape wasn't selected, disable delete button.
+
 }
 
 
@@ -613,6 +733,7 @@ function initPoly(coordinates) {
       var newShape = new Shape(polyType, 0, 0); //create new shape.
       initializeColors(newShape);
       newShape.coordinates = [coordinates[0], coordinates[1], -1000, -1000]; //add clicked coordinate and shapeholder coordinates
+      newShape.fillColor = "white"; //prevent fill color before finalization of polygon
       shapes.push(newShape); //add it to shapes.
       startPolyDraw = false; //turn poly initialization off until next time poly button is clicked
     } else {
@@ -620,6 +741,7 @@ function initPoly(coordinates) {
       if (shapes[shapes.length - 1].coordinates[shapes[shapes.length - 1].coordinates.length - 2] != -1000) {
         shapes[shapes.length - 1].coordinates.push(-1000);
         shapes[shapes.length - 1].coordinates.push(-1000);
+        shapes[shapes.length - 1].fillColor = "white"; //prevent fill color before finalization of polygon
       }
       changeLastVertex(coordinates[0], coordinates[1]);
       canvas1.draw();
@@ -676,6 +798,7 @@ function finalizePoly(coordinates) {
       shapes[shapeIndex].coordinates.push(shapes[shapeIndex].coordinates[1]);
     }
   }
+  initializeColors(shapes[shapeIndex]); //set polyGon to it's rightful fill
   canvas1.draw();
   startPolyDraw = false;
   polyType = "";
@@ -893,7 +1016,6 @@ function scaleShape(shapeIndex, context, mode, x, y) {
         var centerToYScalePoint = Math.sqrt(Math.pow((shape.coordinates[6] - shape.centerX), 2) + Math.pow((shape.coordinates[7] - shape.centerY), 2));
         var changeInY = y - shape.centerY - centerToYScalePoint * Math.cos(shape.angle);
         var changeInX = changeInY * Math.tan(shape.angle);
-        console.log(highPointDifference);
         if (highPointDifference <= 60 && (isIconOnRight && (changeInY < 0))) {} else if (height <= 2 && (isIconOnLeft && (changeInY > 0))) {} else {
           shape.coordinates[8] += changeInX;
           shape.coordinates[6] -= changeInX;
