@@ -556,18 +556,18 @@ $(function() {
     readFile(fileOpenEvent);
   });
 
-  $('#load').change(function(event) {
-    fileOpenEvent = event;
+  $('#load').change(function(evt) {
+    fileOpenEvent = evt;
     if (shapes.length > 0) $("#load-dialog").dialog("open"); //show option to save
-    else readFile(event);
+    else readFile(evt)
   });
 
 });
 
 //-----------------------------LOAD FILE------------------
 
-function readFile(event) {
-  var f = event.target.files[0];
+function readFile(evt) {
+  var f = evt.target.files[0];
   if (f) {
     var r = new FileReader();
     r.onload = function(e) {
