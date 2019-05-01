@@ -1,8 +1,14 @@
-/* HIllary  Ssemakula
+/*
+Hillary Ssemakula
+hillary_ssemakula@student.uml.edu
+ COMP 4270 GUI Computer Graphics I UMass Lowell
+Final Project
+script page for the Shape editor program.
+
 WARNING: Alot of trigonemetry ahead
  */
 
-var shapes = [];
+var shapes = []; //arry keeps track of shape objects.
 var canvas = document.getElementById("canvas");
 var polyType = "";
 var startPolyDraw = false;
@@ -775,13 +781,16 @@ function finalizePoly(coordinates) {
     alert("A ployline cannot be a dot");
     return;
   }
+
   //check if polygon drawn is more than 3 sides.(2 * 3 vertices)
   else if (polyType == "polygon" && shapes[shapes.length - 1].coordinates.length < 6) {
     alert("A ploygon cannot have less than 3 sides");
     return;
   }
+
   //check if last point dragged to, in polygon mode is close to the first point, if so join
   else if (polyType == "polygon") {
+
     var shapeIndex = shapes.length - 1;
     var lastXIndex = shapes[shapeIndex].coordinates.length - 2; //most recent coordinates of polygon placed.
     var lastYIndex = shapes[shapeIndex].coordinates.length - 1;
@@ -797,8 +806,8 @@ function finalizePoly(coordinates) {
       shapes[shapeIndex].coordinates.push(shapes[shapeIndex].coordinates[0]);
       shapes[shapeIndex].coordinates.push(shapes[shapeIndex].coordinates[1]);
     }
+    initializeColors(shapes[shapeIndex]); //set polyGon to it's rightful fill
   }
-  initializeColors(shapes[shapeIndex]); //set polyGon to it's rightful fill
   canvas1.draw();
   startPolyDraw = false;
   polyType = "";
