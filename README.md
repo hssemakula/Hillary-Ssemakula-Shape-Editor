@@ -1,10 +1,9 @@
 # Hillary-Ssemakula-Shape-Editor
 This a shape editor built with HTML5's canvas and JavaScript. Styling is achieved with Bootstrap 4.
 
-## Usage.
-Drag a desired shape from the left panel onto the canvas. Modify shape as needed using the options on the right panel. Shape options include: circle, rectangle, line, ellipse, polygon, polyline
+## MANUAL
+Drag a desired shape from the left panel onto the canvas. Modify shape as needed using the options on the right panel. Shape options include: circle, rectangle, line, ellipse, polygon, polyline.
 
-## Manual
 ### DRAWING SHAPES.
 For a triangle, square, line, curve, rectangle, circle and ellipse, drag the button onto the canvas, the canvas will draw a standard shape with the line color, width and fill color selected. Then you can resize the shape as you see fit.
 For a polyline and a polygon, click on the button and then hover over to the canvas. Click and as you click different areas of the canvas, the polygon or polyline will be defined. When you feel you have got the shape you want, double click and the computer will register that as the new shape. For a polygon, the program automatically closes it, if it’s not closed.
