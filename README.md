@@ -20,4 +20,5 @@ Google chrome is recommended for testing.
 ### Live WebApp
 https://hssemakula.github.io/Hillary-Ssemakula-Shape-Editor/
 
+### Demo
 ![Hillary-Shape-Editor-Demo](demo.gif)
